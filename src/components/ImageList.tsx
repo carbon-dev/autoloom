@@ -7,14 +7,20 @@ interface ImageListProps {
 }
 
 export const ImageList: React.FC<ImageListProps> = ({ type }) => {
-  const { images, removeImage } = useImageStore();
+  const images = useImageStore((state) => state.images);
+  const removeImage = useImageStore((state) => state.removeImage);
 
-  const filteredImages = images.filter((image) => {
-    if (type === 'uploaded') {
-      return image.status === 'pending';
-    }
-    return image.status === 'completed';
+  // Debug logs
+  console.log('ImageList render:', { 
+    type, 
+    allImages: images,
+    pending: images.filter(img => img.status === 'pending'),
+    completed: images.filter(img => img.status === 'completed')
   });
+
+  const filteredImages = type === 'uploaded' 
+    ? images.filter(img => img.status === 'pending' || img.status === 'processing')
+    : images.filter(img => img.status === 'completed');
 
   const handleDownload = (url: string) => {
     const link = document.createElement('a');

@@ -10,6 +10,7 @@ import { useAuthStore } from './store/useAuthStore';
 import { Navbar } from './components/Navbar';
 import { supabase } from './lib/supabase';
 import { LoadingOverlay } from './components/LoadingOverlay';
+import { GlobalToast } from './components/GlobalToast';
 
 // Create a wrapper component to handle auth redirects
 const AuthRedirect: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -92,6 +93,7 @@ function App() {
           />
         </Routes>
       </AuthRedirect>
+      <GlobalToast />
     </BrowserRouter>
   );
 }

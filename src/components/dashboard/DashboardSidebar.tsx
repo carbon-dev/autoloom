@@ -1,11 +1,12 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { 
   Home, 
   Image as ImageIcon, 
   FolderOpen, 
   Settings, 
-  CreditCard 
+  CreditCard,
+  X
 } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { cn } from '../../utils/cn';
@@ -18,11 +19,29 @@ const navigation = [
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
-export const DashboardSidebar: React.FC = () => {
+interface DashboardSidebarProps {
+  onClose?: () => void;
+}
+
+export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ onClose }) => {
   const user = useAuthStore((state) => state.user);
+  const location = useLocation();
+
+  const isLinkActive = (path: string) => {
+    if (path === '/dashboard') {
+      return location.pathname === '/dashboard';
+    }
+    return location.pathname.startsWith(path);
+  };
 
   return (
-    <div className="w-64 bg-white border-r min-h-[calc(100vh-4rem)] p-4 mt-16">
+    <div className="w-80 lg:w-64 bg-white border-r min-h-screen p-4">
+      <div className="flex items-center justify-between lg:hidden mb-4">
+        <h2 className="text-lg font-semibold">Menu</h2>
+        <button onClick={onClose} className="p-2 text-gray-600 hover:text-gray-900">
+          <X className="h-6 w-6" />
+        </button>
+      </div>
       <div className="space-y-4">
         <div className="px-3 py-2">
           <div className="text-sm font-medium text-gray-400">ACCOUNT</div>
@@ -47,14 +66,12 @@ export const DashboardSidebar: React.FC = () => {
             <NavLink
               key={item.name}
               to={item.href}
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center px-3 py-2 text-sm font-medium rounded-lg',
-                  isActive
-                    ? 'bg-indigo-50 text-indigo-600'
-                    : 'text-gray-700 hover:bg-gray-50'
-                )
-              }
+              className={cn(
+                'flex items-center px-3 py-2 text-sm font-medium rounded-lg',
+                isLinkActive(item.href)
+                  ? 'bg-indigo-50 text-indigo-600'
+                  : 'text-gray-700 hover:bg-gray-50'
+              )}
             >
               <item.icon className="h-5 w-5 mr-3" />
               {item.name}

@@ -12,6 +12,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ isBackground = fal
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
+      console.log('Files dropped:', acceptedFiles);
       addImages(acceptedFiles, isBackground);
     },
     [addImages, isBackground]
