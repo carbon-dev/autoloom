@@ -94,14 +94,6 @@ export const Footer: React.FC = () => {
 
           <div className="border-t border-gray-200 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
             <p className="text-sm text-gray-600">© 2024 Autoloom. All rights reserved.</p>
-            <div className="flex space-x-4 mt-4 md:mt-0">
-              <a href="#" className="text-gray-600 hover:text-[#ff6b6b] transition-colors">
-                <Twitter className="h-5 w-5" />
-              </a>
-              <a href="#" className="text-gray-600 hover:text-[#ff6b6b] transition-colors">
-                <Github className="h-5 w-5" />
-              </a>
-            </div>
           </div>
         </div>
       </footer>
