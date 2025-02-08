@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Mail, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
+import { supabase } from '../../lib/supabase';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSignu
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
 
@@ -28,29 +30,50 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSignu
     };
   }, [isOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     
     if (!email || !password) {
       setError('Please fill in all fields');
+      setIsLoading(false);
       return;
     }
     
-    if (!email.includes('@')) {
-      setError('Please enter a valid email');
-      return;
-    }
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
 
-    login(email);
-    onClose();
-    navigate('/dashboard');
+      console.log('Auth response:', { data, error }); // Debug log
+
+      if (error) throw error;
+
+      login(email);
+      onClose();
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Login error:', error); // Debug log
+      setError(error.message || 'Failed to login. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleGoogleLogin = () => {
-    const email = `google_${Math.random().toString(36).substring(7)}@gmail.com`;
-    login(email);
-    onClose();
-    navigate('/dashboard');
+  const handleGoogleLogin = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google'
+      });
+
+      if (error) throw error;
+      
+      // The redirect will happen automatically
+      // Supabase will handle the OAuth flow
+    } catch (error) {
+      setError(error.message);
+    }
   };
 
   const handleSignupClick = () => {
@@ -175,9 +198,22 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSignu
 
               <button
                 type="submit"
-                className="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+                disabled={isLoading}
+                className="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed relative"
               >
-                Sign In
+                {isLoading ? (
+                  <>
+                    <span className="opacity-0">Sign In</span>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    </div>
+                  </>
+                ) : (
+                  'Sign In'
+                )}
               </button>
             </form>
 

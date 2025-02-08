@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
+import { supabase } from '../../lib/supabase';
 
 interface SignupModalProps {
   isOpen: boolean;
@@ -10,7 +11,9 @@ interface SignupModalProps {
 
 export const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose }) => {
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
 
@@ -26,22 +29,51 @@ export const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose }) => 
     };
   }, [isOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     
-    if (!email) {
-      setError('Email is required');
+    if (!email || !password) {
+      setError('Please fill in all fields');
+      setIsLoading(false);
       return;
     }
     
-    if (!email.includes('@')) {
-      setError('Please enter a valid email');
-      return;
-    }
+    try {
+      // First sign up the user
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            subscription_tier: 'trial',
+            trial_images_left: 5,
+            processed_images: 0,
+          }
+        }
+      });
 
-    login(email);
-    onClose();
-    navigate('/dashboard');
+      if (signUpError) throw signUpError;
+
+      // If signup successful, immediately sign them in
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (signInError) throw signInError;
+
+      // Update local auth state and redirect
+      login(email);
+      onClose();
+      navigate('/dashboard');
+
+    } catch (error) {
+      console.error('Signup error:', error);
+      setError(error.message || 'Failed to sign up. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -104,11 +136,45 @@ export const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose }) => 
                 )}
               </div>
 
+              <div>
+                <label 
+                  htmlFor="password" 
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Password
+                </label>
+                <input
+                  type="password"
+                  id="password"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setError('');
+                  }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  placeholder="Password"
+                  autoComplete="new-password"
+                />
+              </div>
+
               <button
                 type="submit"
-                className="w-full bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 transition-colors font-medium"
+                disabled={isLoading}
+                className="w-full bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed relative"
               >
-                Start Free Trial
+                {isLoading ? (
+                  <>
+                    <span className="opacity-0">Start Free Trial</span>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    </div>
+                  </>
+                ) : (
+                  'Start Free Trial'
+                )}
               </button>
 
               <p className="text-sm text-gray-500 text-center">

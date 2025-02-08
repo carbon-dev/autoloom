@@ -4,19 +4,25 @@ import { LogOut, Crown } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { UpgradeModal } from './UpgradeModal';
 import { Logo } from '../Logo';
+import { LoadingOverlay } from '../LoadingOverlay';
 
 export const DashboardNavbar: React.FC = () => {
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    // Add a small delay to show the animation
+    await new Promise(resolve => setTimeout(resolve, 1000));
     logout();
     navigate('/');
   };
 
   return (
     <>
+      {isLoggingOut && <LoadingOverlay message="Logging you out..." />}
       <nav className="bg-white shadow-sm fixed w-full top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
