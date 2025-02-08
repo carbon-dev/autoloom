@@ -9,7 +9,7 @@ import { Gradient } from '../effects/Gradient';
 import { Glow } from '../effects/Glow';
 import { SpotlightButton } from '../effects/SpotlightButton';
 
-export const Hero: React.FC = () => {
+export const Hero = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 

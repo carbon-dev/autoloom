@@ -1,99 +1,72 @@
-import React, { useCallback, useState } from 'react';
-import { useDropzone } from 'react-dropzone';
+import React, { useRef, useState } from 'react';
 import { Upload, Image as ImageIcon } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useImageStore } from '../../store/useImageStore';
-import { useAuthStore } from '../../store/useAuthStore';
-import { QuickPreview } from './QuickPreview';
-import { SignupModal } from '../auth/SignupModal';
 import { Grid } from '../effects/Grid';
 import { Gradient } from '../effects/Gradient';
 import { Glow } from '../effects/Glow';
 import { GlowingBorder } from '../effects/GlowingBorder';
 
 export const QuickUpload: React.FC = () => {
-  const navigate = useNavigate();
-  const addImages = useImageStore((state) => state.addImages);
-  const updateImageStatus = useImageStore((state) => state.updateImageStatus);
-  const login = useAuthStore((state) => state.login);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [processedImage, setProcessedImage] = useState<string | null>(null);
-  const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const processImage = async (file: File, imageId: string) => {
-    setIsProcessing(true);
-    updateImageStatus(imageId, 'processing');
-
-    try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      const processedImageUrl = URL.createObjectURL(file);
-      updateImageStatus(imageId, 'completed', processedImageUrl);
-      setProcessedImage(processedImageUrl);
-    } catch (error) {
-      updateImageStatus(imageId, 'error', undefined, 'Failed to process image');
-    } finally {
-      setIsProcessing(false);
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
     }
   };
 
-  const handleContinue = () => {
-    setIsSignupModalOpen(true);
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    const files = e.dataTransfer.files;
+    if (files && files[0]) {
+      await handleFile(files[0]);
+    }
   };
 
-  const onDrop = useCallback(
-    async (acceptedFiles: File[]) => {
-      const file = acceptedFiles[0];
-      if (!file) return;
+  const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    if (e.target.files && e.target.files[0]) {
+      await handleFile(e.target.files[0]);
+    }
+  };
 
-      const tempEmail = `trial_${Math.random().toString(36).substring(7)}@anonymous.com`;
-      login(tempEmail);
-      
-      const imageId = Math.random().toString(36).substring(7);
-      const preview = URL.createObjectURL(file);
-      
-      addImages([file]);
-      await processImage(file, imageId);
-    },
-    [addImages, login]
-  );
+  const handleFile = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file');
+      return;
+    }
+    
+    try {
+      const objectUrl = URL.createObjectURL(file);
+      window.location.href = `/editor?image=${encodeURIComponent(objectUrl)}`;
+    } catch (error) {
+      console.error('Error processing file:', error);
+      alert('Error processing file. Please try again.');
+    }
+  };
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      'image/*': ['.png', '.jpg', '.jpeg'],
-    },
-    maxFiles: 1,
-    disabled: isProcessing,
-  });
-
-  if (isProcessing || processedImage) {
-    return (
-      <>
-        <QuickPreview 
-          isProcessing={isProcessing}
-          processedImage={processedImage}
-          onTryAgain={() => {
-            setProcessedImage(null);
-            setIsProcessing(false);
-          }}
-          onContinue={handleContinue}
-        />
-        <SignupModal 
-          isOpen={isSignupModalOpen} 
-          onClose={() => {
-            setIsSignupModalOpen(false);
-            navigate('/dashboard');
-          }} 
-        />
-      </>
-    );
-  }
+  const onButtonClick = () => {
+    fileInputRef.current?.click();
+  };
 
   return (
     <GlowingBorder>
       <div
-        {...getRootProps()}
         className="relative bg-gradient-to-br from-white to-gray-50 rounded-2xl p-10 text-center cursor-pointer group overflow-hidden"
+        onDragEnter={handleDrag}
+        onDragLeave={handleDrag}
+        onDragOver={handleDrag}
+        onDrop={handleDrop}
+        onClick={onButtonClick}
+        role="button"
+        tabIndex={0}
       >
         {/* Background Effects */}
         <Grid className="opacity-[0.02]" />
@@ -111,7 +84,16 @@ export const QuickUpload: React.FC = () => {
           }}
         />
         
-        <div className="relative">
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          accept="image/*"
+          onChange={handleChange}
+          aria-label="Upload image"
+        />
+
+        <div className="relative z-10">
           <div className="mb-6 relative">
             <Upload 
               className="mx-auto h-16 w-16 text-indigo-600 animate-bounce" 
@@ -122,7 +104,7 @@ export const QuickUpload: React.FC = () => {
             />
           </div>
           <h3 className="text-2xl font-semibold text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors">
-            {isDragActive ? 'Drop your image here...' : 'Try it now!'}
+            {dragActive ? 'Drop your image here...' : 'Try it now!'}
           </h3>
           <p className="text-lg text-gray-600 mb-4 group-hover:text-gray-900 transition-colors">
             Drag & drop or click to upload an image
