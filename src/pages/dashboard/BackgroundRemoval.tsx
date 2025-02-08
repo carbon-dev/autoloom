@@ -10,10 +10,7 @@ import { Tabs } from '../../components/dashboard/Tabs';
 
 export const BackgroundRemoval = () => {
   const user = useAuthStore((state) => state.user);
-  const activeTab = useImageStore((state) => {
-    console.log('Getting activeTab:', state.activeTab);
-    return state.activeTab;
-  });
+  const activeTab = useImageStore((state) => state.activeTab);
   const setActiveTab = useImageStore((state) => state.setActiveTab);
   
   const uploadedCount = useImageStore((state) => 
@@ -28,9 +25,9 @@ export const BackgroundRemoval = () => {
   console.log('BackgroundRemoval render - activeTab:', activeTab);
 
   return (
-    <div className="relative">
+    <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 flex-shrink-0">
         <div>
           <h1 className="text-xl lg:text-2xl font-semibold text-gray-900">Background Removal</h1>
           <p className="text-sm text-gray-600 mt-1 lg:hidden">
@@ -43,10 +40,12 @@ export const BackgroundRemoval = () => {
       </div>
 
       {/* Main Upload Area */}
-      <ImageUploader />
+      <div className="flex-shrink-0">
+        <ImageUploader />
+      </div>
 
       {/* Background Images Section */}
-      <div className="mt-6 lg:mt-8">
+      <div className="mt-6 lg:mt-8 flex-shrink-0">
         <details className="lg:details-none bg-white rounded-lg border border-gray-200">
           <summary className="px-4 py-3 lg:hidden cursor-pointer text-sm font-medium text-gray-900 flex items-center justify-between">
             Background Images
@@ -61,20 +60,17 @@ export const BackgroundRemoval = () => {
         </details>
       </div>
 
-      {/* Tabs */}
-      <Tabs
-        activeTab={activeTab}
-        onChange={(tab) => {
-          console.log('Tab clicked:', tab);
-          setActiveTab(tab);
-        }}
-        uploadedCount={uploadedCount}
-        processedCount={processedCount}
-      />
-
-      {/* Image List */}
-      <div className="mt-6">
-        <ImageList type={activeTab} />
+      {/* Tabs and Image List */}
+      <div className="mt-6 flex flex-col flex-1 min-h-0">
+        <Tabs
+          activeTab={activeTab}
+          onChange={setActiveTab}
+          uploadedCount={uploadedCount}
+          processedCount={processedCount}
+        />
+        <div className="mt-6 flex-1 overflow-y-auto">
+          <ImageList type={activeTab} />
+        </div>
       </div>
     </div>
   );

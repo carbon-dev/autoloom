@@ -57,7 +57,7 @@ export const Features: React.FC = () => {
           <p className="text-xl text-gray-600">autoloom makes creating better images easier, saving you time and money.</p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8 items-center">
+        <div className="grid lg:grid-cols-2 gap-8 items-start">
           <div className="space-y-4">
             {features.map((feature, index) => (
               <div
@@ -104,7 +104,7 @@ export const Features: React.FC = () => {
               <BeforeAfterSlider
                 beforeImage={carImage}
                 afterImage={carImage}
-                className="shadow-2xl"
+                className="shadow-2xl h-[280px]"
                 showBackground={false}
               />
             </div>
