@@ -4,6 +4,7 @@ import type { Database } from '../types/supabase';
 // Change this to false to use real Supabase
 const MOCK_MODE = false;
 
+// Use import.meta.env instead of process.env
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
