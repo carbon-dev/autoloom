@@ -30,17 +30,17 @@ export const Hero = () => {
       <div className="relative w-full overflow-hidden">
         <div className="relative max-w-7xl mx-auto px-4 py-16">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            <div className="relative">
+            <div className="relative text-center lg:text-left">
               <div className="absolute -top-8 -left-8 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl animate-pulse" />
               <div className="relative">
-                <h1 className="font-display text-5xl lg:text-7xl font-bold mb-6 leading-[1.1] bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600">
+                <h1 className="font-display text-4xl md:text-5xl lg:text-7xl font-bold mb-6 leading-[1.1] bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600">
                   Sell your cars faster with better photos.
                 </h1>
                 <p className="text-lg lg:text-xl text-gray-600 mb-8 leading-relaxed">
                   AI-powered background removal, virtual showrooms, and custom branding in the blink of an eye. Let your dealership's photos stand out in a crowded marketplace.
                 </p>
                 <div className="space-y-6">
-                  <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex flex-col sm:flex-row justify-center lg:justify-start gap-4">
                     {isAuthenticated ? (
                       <Link to="/dashboard">
                         <SpotlightButton className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700">

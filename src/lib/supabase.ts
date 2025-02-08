@@ -1,30 +1,41 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../types/supabase';
 
-// Set to true for local development, false for production
-const MOCK_MODE = true;
-
-// Use import.meta.env instead of process.env
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseUrl = 'https://ugdgmtqgofvweaydjaxi.supabase.co';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Only check env vars if not in mock mode
-if (!MOCK_MODE && (!supabaseUrl || !supabaseAnonKey)) {
-  console.error('Missing Supabase environment variables:', {
-    url: !!supabaseUrl,
-    key: !!supabaseAnonKey
-  });
-  throw new Error('Missing Supabase environment variables');
+// Add debug logging
+console.log('Initializing Supabase client with:', {
+  url: supabaseUrl,
+  keyLength: supabaseAnonKey?.length || 0
+});
+
+// Create client
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
+  }
+});
+
+// Test the connection
+supabase.auth.getSession().then(({ data, error }) => {
+  if (error) {
+    console.error('Supabase connection error:', error);
+  } else {
+    console.log('Supabase connected successfully');
+  }
+});
+
+export const isMockMode = () => false;
+
+// Mock auth functions if needed
+if (false) {
+  supabase.auth = {
+    ...supabase.auth,
+    signUp: async () => ({ data: { user: { email: 'mock@example.com' } }, error: null }),
+    signInWithPassword: async () => ({ data: { user: { email: 'mock@example.com' } }, error: null }),
+    signInWithOAuth: async () => ({ data: { user: { email: 'mock@example.com' } }, error: null }),
+  } as any;
 }
-
-// Ensure URL is properly formatted when not in mock mode
-const fullUrl = MOCK_MODE 
-  ? 'https://mock.supabase.co' 
-  : (supabaseUrl.startsWith('http') ? supabaseUrl : `https://${supabaseUrl}`);
-
-export const supabase = MOCK_MODE 
-  ? null 
-  : createClient<Database>(fullUrl, supabaseAnonKey);
-
-// Helper to check if we're using mock data
-export const isMockMode = () => MOCK_MODE;
