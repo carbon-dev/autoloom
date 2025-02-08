@@ -21,8 +21,10 @@ export const Footer: React.FC = () => {
       <footer className="bg-white w-full overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 py-12">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <Logo className="mb-4" />
+            <div className="col-span-2 md:col-span-1">
+              <div className="max-w-[120px] md:max-w-none">
+                <Logo className="mb-4 w-auto h-8" />
+              </div>
               <p className="text-sm text-gray-600">
                 Professional background removal powered by artificial intelligence.
               </p>

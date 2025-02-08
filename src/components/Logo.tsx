@@ -10,14 +10,16 @@ export const Logo: React.FC<LogoProps> = ({ className = '' }) => {
   const [imageError, setImageError] = useState(false);
 
   return (
-    <Link to="/" className={`flex items-center ${className}`}>
+    <Link to="/" className={`inline-flex items-center ${className}`}>
       {!imageError ? (
-        <img
-          src="/autoloom.png"
-          alt="Autoloom"
-          className="h-8 w-auto"
-          onError={() => setImageError(true)}
-        />
+        <div className="h-8 relative">
+          <img
+            src="/autoloom.png"
+            alt="Autoloom"
+            className="h-full w-auto object-contain"
+            onError={() => setImageError(true)}
+          />
+        </div>
       ) : (
         <>
           <Scissors className="h-8 w-8 text-indigo-600" />
