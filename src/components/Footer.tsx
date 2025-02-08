@@ -18,7 +18,7 @@ export const Footer: React.FC = () => {
 
   return (
     <>
-      <footer className="bg-gradient-to-br from-gray-50 to-gray-100">
+      <footer className="bg-white w-full overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 py-12">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
             <div>

@@ -5,14 +5,21 @@ import { MainFeatures } from '../components/landing/MainFeatures';
 import { Pricing } from '../components/landing/Pricing';
 import { ValueProps } from '../components/landing/ValueProps';
 import { Footer } from '../components/Footer';
-import { Helmet } from 'react-helmet';
+// Import Helmet conditionally
+let Helmet: any;
+try {
+  Helmet = require('react-helmet').Helmet;
+} catch (e) {
+  Helmet = ({ children }: { children: React.ReactNode }) => <>{children}</>;
+}
 
 export const LandingPage: React.FC = () => {
   return (
-    <div className="bg-white">
+    <div className="bg-white overflow-x-hidden">
       <Helmet>
         <meta name="robots" content="noindex, nofollow" />
         <meta name="googlebot" content="noindex, nofollow" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
       </Helmet>
       <Hero />
       <div id="features">
