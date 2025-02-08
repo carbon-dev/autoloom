@@ -12,18 +12,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
-console.log('Supabase URL:', supabaseUrl); // Debug log
-
-// Ensure the URL has https:// prefix and no trailing spaces
-const fullUrl = supabaseUrl.startsWith('http') 
-  ? supabaseUrl.trim()
-  : `https://${supabaseUrl.trim()}`;
-
-console.log('Full URL:', fullUrl); // Debug log
-
 export const supabase = MOCK_MODE 
   ? null 
-  : createClient<Database>(fullUrl, supabaseAnonKey);
+  : createClient<Database>(supabaseUrl, supabaseAnonKey);
 
 // Helper to check if we're using mock data
 export const isMockMode = () => MOCK_MODE;
