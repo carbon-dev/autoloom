@@ -16,11 +16,6 @@ export const LandingPage: React.FC = () => {
   const location = useLocation();
 
   useEffect(() => {
-    // Clear auth state when landing page is loaded
-    clearAuth?.();
-  }, [clearAuth]);
-
-  useEffect(() => {
     // Check if we have a section to scroll to
     if (location.state?.scrollTo) {
       const element = document.getElementById(location.state.scrollTo);

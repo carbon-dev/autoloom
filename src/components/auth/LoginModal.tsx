@@ -65,13 +65,15 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSignu
   const handleGoogleLogin = async () => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google'
+        provider: 'google',
+        options: {
+          redirectTo: window.location.hostname === 'localhost' 
+            ? 'http://localhost:3000'
+            : 'https://autoloom.co'
+        }
       });
 
       if (error) throw error;
-      
-      // The redirect will happen automatically
-      // Supabase will handle the OAuth flow
     } catch (error) {
       setError(error.message);
     }
@@ -108,7 +110,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSignu
               }}
             >
               <div className="flex items-center justify-between border-b p-4">
-                <h2 id="modal-title" className="text-xl font-semibold">Welcome Back</h2>
+                <h2 id="modal-title" className="text-xl font-semibold">Welcome back!</h2>
                 <button
                   onClick={onClose}
                   className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -149,7 +151,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSignu
                     <div className="w-full border-t border-gray-200" />
                   </div>
                   <div className="relative flex justify-center text-sm">
-                    <span className="bg-white px-4 text-gray-500">Or continue with</span>
+                    <span className="bg-white px-4 text-gray-500">Or sign in with</span>
                   </div>
                 </div>
 

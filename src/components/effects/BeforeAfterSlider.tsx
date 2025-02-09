@@ -21,6 +21,16 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({
   const [position, setPosition] = useState(50);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const handleMove = (clientX: number) => {
+    if (!containerRef.current) return;
+
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
+    const percentage = (x / rect.width) * 100;
+    setPosition(percentage);
+  };
+
+  // Mouse events
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
     setIsResizing(true);
@@ -31,23 +41,38 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({
   };
 
   const handleMouseMove = (e: MouseEvent) => {
-    if (!isResizing || !containerRef.current) return;
+    if (!isResizing) return;
+    handleMove(e.clientX);
+  };
 
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
-    const percentage = (x / rect.width) * 100;
-    setPosition(percentage);
+  // Touch events
+  const handleTouchStart = (e: React.TouchEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  };
+
+  const handleTouchEnd = () => {
+    setIsResizing(false);
+  };
+
+  const handleTouchMove = (e: TouchEvent) => {
+    if (!isResizing) return;
+    handleMove(e.touches[0].clientX);
   };
 
   useEffect(() => {
     if (isResizing) {
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
+      window.addEventListener('touchmove', handleTouchMove);
+      window.addEventListener('touchend', handleTouchEnd);
     }
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
     };
   }, [isResizing]);
 
@@ -90,6 +115,7 @@ export const BeforeAfterSlider: React.FC<BeforeAfterSliderProps> = ({
           cursor: 'ew-resize',
         }}
         onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
       >
         <div className="absolute inset-y-0 w-0.5 bg-white/80" />
         <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-6 h-6 bg-white rounded-full shadow-lg flex items-center justify-center">

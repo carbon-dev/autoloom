@@ -1,11 +1,22 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../types/supabase';
 
-const supabaseUrl = 'https://ugdgmtqgofvweaydjaxi.supabase.co';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+export const isMockMode = () => import.meta.env.VITE_MOCK_AUTH === 'true';
+
 // Create client
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+    flowType: 'pkce',
+    // Use site URL from Supabase dashboard instead of manual redirect
+    // This will respect the URL you set in your Supabase project settings
+  }
+});
 
 // Test the connection immediately
 supabase.auth.getSession().then(({ data, error }) => {
@@ -15,8 +26,6 @@ supabase.auth.getSession().then(({ data, error }) => {
     console.log('Supabase connected successfully');
   }
 });
-
-export const isMockMode = () => false;
 
 // Mock auth functions if needed
 if (false) {

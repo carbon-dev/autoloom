@@ -8,9 +8,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface SignupModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-export const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose }) => {
+export const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -66,6 +67,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose }) => 
 
       // Update local auth state and redirect
       login(email);
+      onSuccess?.();
       onClose();
       navigate('/dashboard');
 
