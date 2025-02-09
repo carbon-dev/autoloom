@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { LandingPage } from './pages/LandingPage';
 import { DashboardLayout } from './components/dashboard/DashboardLayout';
@@ -18,63 +18,61 @@ import { AnimatePresence } from 'framer-motion';
 import { PageTransition } from './components/PageTransition';
 import { Contact } from './pages/Contact';
 
-// Create a wrapper component to handle auth redirects
-const AuthRedirect: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (isAuthenticated && location.pathname === '/') {
-      navigate('/dashboard');
-    }
-  }, [isAuthenticated, location.pathname, navigate]);
-
-  return <>{children}</>;
-};
-
 function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isAuthLoading = useAuthStore((state) => state.isAuthLoading);
   const login = useAuthStore(state => state.login);
   const logout = useAuthStore(state => state.logout);
+  const setAuthLoading = useAuthStore(state => state.setAuthLoading);
 
   useEffect(() => {
     const initAuth = async () => {
       try {
-        // Get initial session
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
           login(session.user.email);
         }
 
-        // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
           if (session?.user) {
             login(session.user.email);
           } else {
             logout();
           }
+          setAuthLoading(false);
         });
 
         return () => subscription.unsubscribe();
       } catch (error) {
         console.error('Auth initialization error:', error);
+        setAuthLoading(false);
       }
     };
 
     initAuth();
-  }, [login, logout]);
+  }, [login, logout, setAuthLoading]);
+
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4" />
+          <p className="text-gray-500">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <BrowserRouter>
       <ScrollToTop />
-      <AuthRedirect>
-        <AnimatePresence mode="wait">
-          <Routes>
-            <Route
-              path="/dashboard/*"
-              element={
-                isAuthenticated ? (
+      <AnimatePresence mode="wait">
+        <Routes>
+          {isAuthenticated ? (
+            <>
+              <Route
+                path="/dashboard/*"
+                element={
                   <DashboardLayout>
                     <PageTransition>
                       <Routes>
@@ -84,11 +82,11 @@ function App() {
                       </Routes>
                     </PageTransition>
                   </DashboardLayout>
-                ) : (
-                  <Navigate to="/" replace />
-                )
-              }
-            />
+                }
+              />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </>
+          ) : (
             <Route
               path="*"
               element={
@@ -101,14 +99,15 @@ function App() {
                       <Route path="/terms" element={<Terms />} />
                       <Route path="/privacy" element={<Privacy />} />
                       <Route path="/contact" element={<Contact />} />
+                      <Route path="*" element={<Navigate to="/" replace />} />
                     </Routes>
                   </PageTransition>
                 </>
               }
             />
-          </Routes>
-        </AnimatePresence>
-      </AuthRedirect>
+          )}
+        </Routes>
+      </AnimatePresence>
       <GlobalToast />
     </BrowserRouter>
   );

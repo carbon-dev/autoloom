@@ -109,8 +109,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSignu
                 ease: [0.22, 1, 0.36, 1]
               }}
             >
-              <div className="flex items-center justify-between border-b p-4">
-                <h2 id="modal-title" className="text-xl font-semibold">Welcome back!</h2>
+              <div className="flex items-center justify-between border-b p-4 md:p-6">
+                <h2 id="modal-title" className="text-xl font-semibold">Sign In</h2>
                 <button
                   onClick={onClose}
                   className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -120,7 +120,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSignu
                 </button>
               </div>
 
-              <div className="p-4">
+              <div className="p-4 md:p-8">
                 <button
                   onClick={handleGoogleLogin}
                   className="w-full flex items-center justify-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors mb-6"

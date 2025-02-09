@@ -5,13 +5,17 @@ import { useAuthStore } from '../../store/useAuthStore';
 
 interface DashboardSidebarProps {
   onClose?: () => void;
+  onLogoutStart?: () => void;
 }
 
-export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ onClose }) => {
+export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ onClose, onLogoutStart }) => {
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    onLogoutStart?.();
+    // Add a small delay to show the loading state
+    await new Promise(resolve => setTimeout(resolve, 1000));
     logout();
     onClose?.();
   };

@@ -2,9 +2,19 @@ import { create } from 'zustand';
 import { supabase, isMockMode } from '../lib/supabase';
 import type { AuthStore, User } from '../types';
 
-export const useAuthStore = create<AuthStore>((set) => ({
-  user: null,
+interface AuthState {
+  isAuthenticated: boolean;
+  user: User | null;
+  isAuthLoading: boolean;
+  login: (email: string) => void;
+  logout: () => void;
+  setAuthLoading: (loading: boolean) => void;
+}
+
+export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
+  user: null,
+  isAuthLoading: true,
   login: async (email) => {
     try {
       if (isMockMode()) {
@@ -66,14 +76,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
     // Clear the store state
     set({ user: null, isAuthenticated: false });
   },
-  clearAuth: () => {
-    // Clear all storage
-    localStorage.clear();
-    sessionStorage.clear();
-    
-    // Reset store to initial state
-    set({ user: null, isAuthenticated: false });
-  },
+  setAuthLoading: (loading) => set({ isAuthLoading: loading }),
   updateProcessedImages: async () => {
     set((state) => {
       if (!state.user) return state;

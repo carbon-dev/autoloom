@@ -114,11 +114,11 @@ export const QuickUpload: React.FC = () => {
           
           {/* Animated Gradient Background */}
           <div 
-            className="absolute inset-0 opacity-40 group-hover:opacity-60 transition-opacity duration-500"
+            className="absolute inset-0 opacity-30 group-hover:opacity-90 transition-opacity duration-1000"
             style={{
               background: 'linear-gradient(45deg, rgba(99,102,241,0.2), rgba(168,85,247,0.2), rgba(236,72,153,0.2))',
               backgroundSize: '400% 400%',
-              animation: 'gradient 15s ease infinite',
+              animation: 'gradient 20s ease infinite',
             }}
           />
           
@@ -134,7 +134,7 @@ export const QuickUpload: React.FC = () => {
           <div className="relative z-10">
             <div className="mb-4">
               <Upload 
-                className="mx-auto h-12 w-12 text-indigo-600 animate-bounce" 
+                className="mx-auto h-8 w-8 text-indigo-600 animate-bounce" 
                 style={{ animationDuration: '3s' }} 
               />
             </div>

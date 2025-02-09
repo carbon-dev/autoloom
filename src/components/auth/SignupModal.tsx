@@ -1,23 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
 import { supabase } from '../../lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useModalStore } from '../../store/useModalStore';
 
 interface SignupModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  onSigninClick?: () => void;
 }
 
-export const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSuccess }) => {
+export const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSuccess, onSigninClick }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string>('');
+  const [passwordError, setPasswordError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isExistingUser, setIsExistingUser] = useState(false);
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
+  const { openLogin } = useModalStore();
 
   useEffect(() => {
     if (isOpen) {
@@ -31,8 +36,34 @@ export const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSuc
     };
   }, [isOpen]);
 
+  const validatePassword = (value: string) => {
+    if (value.length < 6) {
+      return 'Password must be at least 6 characters';
+    }
+    if (!/(?=.*[0-9])/.test(value)) {
+      return 'Password must contain at least one number';
+    }
+    if (!/(?=.*[a-zA-Z])/.test(value)) {
+      return 'Password must contain at least one letter';
+    }
+    return '';
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setPassword(value);
+    setPasswordError(validatePassword(value));
+    setError('');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsExistingUser(false);
+    const passwordValidation = validatePassword(password);
+    if (passwordValidation) {
+      setPasswordError(passwordValidation);
+      return;
+    }
     setIsLoading(true);
     
     if (!email || !password) {
@@ -42,7 +73,6 @@ export const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSuc
     }
     
     try {
-      // First sign up the user
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -55,9 +85,15 @@ export const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSuc
         }
       });
 
-      if (signUpError) throw signUpError;
+      if (signUpError) {
+        if (signUpError.message.includes('User already registered')) {
+          setError('You already have an account.');
+          setIsExistingUser(true);
+          return;
+        }
+        throw signUpError;
+      }
 
-      // If signup successful, immediately sign them in
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -65,11 +101,15 @@ export const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSuc
 
       if (signInError) throw signInError;
 
-      // Update local auth state and redirect
-      login(email);
       onSuccess?.();
-      onClose();
-      navigate('/dashboard');
+      
+      // Navigate but don't close modal yet
+      navigate('/dashboard', { replace: true });
+      
+      // Wait for navigation animation to complete before closing modal
+      setTimeout(() => {
+        onClose();
+      }, 400); // Match this with your PageTransition duration
 
     } catch (error) {
       console.error('Signup error:', error);
@@ -86,7 +126,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSuc
       {isOpen && (
         <>
           <motion.div 
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 modal-backdrop"
             onClick={onClose}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -104,7 +144,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSuc
                 ease: [0.22, 1, 0.36, 1]
               }}
             >
-              <div className="flex items-center justify-between border-b p-4">
+              <div className="flex items-center justify-between border-b p-4 md:p-6">
                 <h2 id="modal-title" className="text-xl font-semibold">Start Your Free Trial</h2>
                 <button
                   onClick={onClose}
@@ -115,7 +155,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSuc
                 </button>
               </div>
 
-              <div className="p-4">
+              <div className="p-4 md:p-8">
                 <p className="text-gray-600 mb-6">
                   Get 5 free background removals. No credit card required.
                 </p>
@@ -144,6 +184,25 @@ export const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSuc
                     {error && (
                       <p className="mt-1 text-sm text-red-500" role="alert">
                         {error}
+                        {isExistingUser && (
+                          <>
+                            {' '}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                onClose(); // Close signup modal
+                                setTimeout(() => {
+                                  openLogin(); // Open login modal directly from the store
+                                }, 100);
+                              }}
+                              className="text-blue-500 hover:text-blue-600 font-medium"
+                            >
+                              Sign in instead
+                            </button>
+                          </>
+                        )}
                       </p>
                     )}
                   </div>
@@ -159,14 +218,18 @@ export const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSuc
                       type="password"
                       id="password"
                       value={password}
-                      onChange={(e) => {
-                        setPassword(e.target.value);
-                        setError('');
-                      }}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      onChange={handlePasswordChange}
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                        passwordError ? 'border-red-300' : 'border-gray-300'
+                      }`}
                       placeholder="Password"
                       autoComplete="new-password"
                     />
+                    {passwordError && (
+                      <p className="mt-1 text-sm text-red-500">
+                        {passwordError}
+                      </p>
+                    )}
                   </div>
 
                   <button

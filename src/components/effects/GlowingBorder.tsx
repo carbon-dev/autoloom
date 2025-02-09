@@ -1,28 +1,46 @@
 import React from 'react';
-import { cn } from '../../utils/cn';
 
 interface GlowingBorderProps {
-  className?: string;
   children: React.ReactNode;
 }
 
-export const GlowingBorder: React.FC<GlowingBorderProps> = ({ className, children }) => {
+export const GlowingBorder: React.FC<GlowingBorderProps> = ({ children }) => {
   return (
-    <div className={cn(
-      'relative rounded-2xl p-px overflow-hidden group/border',
-      'before:absolute before:inset-0',
-      'before:bg-[linear-gradient(45deg,transparent_25%,rgba(68,68,68,.2)_50%,transparent_75%,transparent_100%)]',
-      'before:bg-[length:250%_250%,100%_100%]',
-      'before:animate-border-glow',
-      'after:absolute after:inset-0',
-      'after:bg-gradient-to-r after:from-indigo-500/50 after:via-purple-500/50 after:to-pink-500/50',
-      'after:opacity-0 after:group-hover/border:opacity-100',
-      'after:transition-opacity after:duration-500',
-      className
-    )}>
-      <div className="relative bg-white rounded-2xl h-full">
+    <div className="relative">
+      {/* Animated border */}
+      <div className="absolute -inset-[1px] rounded-2xl overflow-hidden">
+        <div className="absolute inset-[-50%] animate-border-flow">
+          <div className="absolute h-[200%] w-[200%] bg-[length:50%_50%] bg-no-repeat"
+               style={{
+                 backgroundImage: `
+                   linear-gradient(to right, transparent, transparent 45%, rgba(99, 102, 241, 0.5) 50%, transparent 55%, transparent),
+                   linear-gradient(to bottom, transparent, transparent 45%, rgba(99, 102, 241, 0.5) 50%, transparent 55%, transparent)
+                 `
+               }}
+          />
+        </div>
+      </div>
+      
+      {/* Content */}
+      <div className="relative">
         {children}
       </div>
+
+      {/* Animation keyframes */}
+      <style>{`
+        @keyframes border-flow {
+          0% {
+            transform: rotate(0deg);
+          }
+          100% {
+            transform: rotate(360deg);
+          }
+        }
+
+        .animate-border-flow {
+          animation: border-flow 4s linear infinite;
+        }
+      `}</style>
     </div>
   );
 };

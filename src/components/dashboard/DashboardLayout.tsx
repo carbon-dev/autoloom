@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { DashboardSidebar } from './DashboardSidebar';
 import { DashboardNavbar } from './DashboardNavbar';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -8,6 +9,7 @@ interface DashboardLayoutProps {
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -29,13 +31,30 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
           transform transition-transform duration-200 ease-in-out
           ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}>
-          <DashboardSidebar onClose={() => setIsSidebarOpen(false)} />
+          <DashboardSidebar 
+            onClose={() => setIsSidebarOpen(false)} 
+            onLogoutStart={() => setIsLoggingOut(true)}
+          />
         </div>
 
         {/* Main content */}
         <main className="flex-1 overflow-y-auto">
           <div className="p-4 lg:p-8">
-            {children}
+            <AnimatePresence>
+              {isLoggingOut ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex flex-col items-center justify-center h-[80vh]"
+                >
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4" />
+                  <h2 className="text-xl font-medium text-gray-900">Logging you out...</h2>
+                  <p className="text-gray-500 mt-2">Thanks for using Autoloom!</p>
+                </motion.div>
+              ) : (
+                children
+              )}
+            </AnimatePresence>
           </div>
         </main>
       </div>

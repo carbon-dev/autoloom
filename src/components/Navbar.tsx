@@ -5,11 +5,20 @@ import { Logo } from './Logo';
 import { LoginModal } from './auth/LoginModal';
 import { SignupModal } from './auth/SignupModal';
 import { useAuthStore } from '../store/useAuthStore';
+import { useModalStore } from '../store/useModalStore';
 
 export const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
+  const { 
+    isLoginOpen, 
+    isSignupOpen, 
+    openLogin, 
+    openSignup, 
+    closeLogin, 
+    closeSignup,
+    switchToLogin,
+    switchToSignup
+  } = useModalStore();
   const navigate = useNavigate();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
@@ -49,13 +58,13 @@ export const Navbar: React.FC = () => {
             ) : (
               <>
                 <button
-                  onClick={() => setIsLoginModalOpen(true)}
+                  onClick={openLogin}
                   className="text-gray-600 hover:text-gray-900"
                 >
                   Sign In
                 </button>
                 <button
-                  onClick={() => setIsSignupModalOpen(true)}
+                  onClick={openSignup}
                   className="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
                 >
                   Start Free Trial
@@ -102,7 +111,7 @@ export const Navbar: React.FC = () => {
                 <button
                   onClick={() => {
                     setIsMenuOpen(false);
-                    setIsLoginModalOpen(true);
+                    openLogin();
                   }}
                   className="block w-full text-left px-3 py-2 text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 >
@@ -111,7 +120,7 @@ export const Navbar: React.FC = () => {
                 <button
                   onClick={() => {
                     setIsMenuOpen(false);
-                    setIsSignupModalOpen(true);
+                    openSignup();
                   }}
                   className="block w-full text-left px-3 py-2 text-base font-medium text-indigo-600 hover:text-indigo-700 hover:bg-gray-50"
                 >
@@ -124,16 +133,14 @@ export const Navbar: React.FC = () => {
       )}
 
       <LoginModal
-        isOpen={isLoginModalOpen}
-        onClose={() => setIsLoginModalOpen(false)}
-        onSignupClick={() => {
-          setIsLoginModalOpen(false);
-          setIsSignupModalOpen(true);
-        }}
+        isOpen={isLoginOpen}
+        onClose={closeLogin}
+        onSignupClick={switchToSignup}
       />
       <SignupModal
-        isOpen={isSignupModalOpen}
-        onClose={() => setIsSignupModalOpen(false)}
+        isOpen={isSignupOpen}
+        onClose={closeSignup}
+        onSigninClick={switchToLogin}
       />
     </nav>
   );
