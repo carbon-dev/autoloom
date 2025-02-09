@@ -8,7 +8,6 @@ export const useAuthStore = create<AuthStore>((set) => ({
   login: async (email) => {
     try {
       if (isMockMode()) {
-        // Fall back to local storage for development
         const newUser: User = {
           id: Math.random().toString(36).substring(7),
           email,
@@ -60,6 +59,19 @@ export const useAuthStore = create<AuthStore>((set) => ({
     }
   },
   logout: () => {
+    // Clear all storage
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    // Clear the store state
+    set({ user: null, isAuthenticated: false });
+  },
+  clearAuth: () => {
+    // Clear all storage
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    // Reset store to initial state
     set({ user: null, isAuthenticated: false });
   },
   updateProcessedImages: async () => {

@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { Github, Twitter } from 'lucide-react';
 import { Logo } from './Logo';
+import { Link } from 'react-router-dom';
 import { LegalModal } from './legal/LegalModal';
 import { PrivacyPolicyContent } from './legal/PrivacyPolicyContent';
 import { TermsOfServiceContent } from './legal/TermsOfServiceContent';
 
 export const Footer: React.FC = () => {
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
-  const [isTermsOpen, setIsTermsOpen] = useState(false);
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -75,20 +75,20 @@ export const Footer: React.FC = () => {
               <h3 className="font-semibold text-gray-900 mb-4">Legal</h3>
               <ul className="space-y-2">
                 <li>
-                  <button
-                    onClick={() => setIsPrivacyOpen(true)}
+                  <Link
+                    to="/privacy"
                     className="text-gray-600 hover:text-[#ff6b6b] transition-colors"
                   >
                     Privacy Policy
-                  </button>
+                  </Link>
                 </li>
                 <li>
-                  <button
-                    onClick={() => setIsTermsOpen(true)}
+                  <Link
+                    to="/terms"
                     className="text-gray-600 hover:text-[#ff6b6b] transition-colors"
                   >
                     Terms of Service
-                  </button>
+                  </Link>
                 </li>
               </ul>
             </div>
@@ -106,14 +106,6 @@ export const Footer: React.FC = () => {
         title="Privacy Policy"
       >
         <PrivacyPolicyContent />
-      </LegalModal>
-
-      <LegalModal
-        isOpen={isTermsOpen}
-        onClose={() => setIsTermsOpen(false)}
-        title="Terms of Service"
-      >
-        <TermsOfServiceContent />
       </LegalModal>
     </>
   );

@@ -7,3 +7,18 @@ html, body {
   max-width: 100%;
   overflow-x: hidden;
 }
+
+/* Add smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Prevent FOUC */
+.js-focus-visible :focus:not(.focus-visible) {
+  outline: none;
+}
+
+/* Optional: Add a backdrop blur during transitions */
+.transition-backdrop {
+  backdrop-filter: blur(4px);
+}
