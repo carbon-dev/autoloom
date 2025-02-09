@@ -16,6 +16,7 @@ import { Privacy } from './pages/Privacy';
 import { ScrollToTop } from './components/ScrollToTop';
 import { AnimatePresence } from 'framer-motion';
 import { PageTransition } from './components/PageTransition';
+import { Contact } from './pages/Contact';
 
 // Create a wrapper component to handle auth redirects
 const AuthRedirect: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -99,6 +100,7 @@ function App() {
                       <Route path="/pricing" element={<Pricing />} />
                       <Route path="/terms" element={<Terms />} />
                       <Route path="/privacy" element={<Privacy />} />
+                      <Route path="/contact" element={<Contact />} />
                     </Routes>
                   </PageTransition>
                 </>

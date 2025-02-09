@@ -1,37 +1,52 @@
 import React, { useState } from 'react';
 import { Github, Twitter } from 'lucide-react';
 import { Logo } from './Logo';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LegalModal } from './legal/LegalModal';
 import { PrivacyPolicyContent } from './legal/PrivacyPolicyContent';
 import { TermsOfServiceContent } from './legal/TermsOfServiceContent';
 
 export const Footer: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
 
   const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+    if (location.pathname === '/') {
+      // If we're on homepage, just scroll
+      const element = document.getElementById(id);
+      if (element) {
+        const headerOffset = 80; // Adjust this value to control the scroll position
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
+      }
+    } else {
+      // If we're on another page, navigate to homepage then scroll
+      navigate('/', { state: { scrollTo: id } });
     }
   };
 
   return (
     <>
       <footer className="bg-white w-full overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 py-12">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
+        <div className="max-w-7xl mx-auto px-4 py-2 md:py-12">
+          <div className="grid grid-cols-2 md:grid-cols-[1fr_auto_auto] gap-y-4 gap-x-0 mb-2 md:mb-4">
             <div className="col-span-2 md:col-span-1">
               <div className="max-w-[120px] md:max-w-none">
-                <Logo className="mb-4 w-auto h-8" />
+                <Logo className="mb-0.5 md:mb-4 w-auto h-8" />
               </div>
               <p className="text-sm text-gray-600">
                 Professional background removal powered by artificial intelligence.
               </p>
             </div>
 
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-4">Product</h3>
+            <div className="md:text-right md:pr-16">
+              <h3 className="font-semibold text-gray-900 mb-2">Product</h3>
               <ul className="space-y-2">
                 <li>
                   <button
@@ -52,28 +67,17 @@ export const Footer: React.FC = () => {
               </ul>
             </div>
 
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-4">Company</h3>
+            <div className="md:text-right">
+              <h3 className="font-semibold text-gray-900 mb-2">Company</h3>
               <ul className="space-y-2">
                 <li>
-                  <button
-                    onClick={() => scrollToSection('testimonials')}
+                  <Link
+                    to="/contact"
                     className="text-gray-600 hover:text-[#ff6b6b] transition-colors"
                   >
-                    Testimonials
-                  </button>
-                </li>
-                <li>
-                  <button className="text-gray-600 hover:text-[#ff6b6b] transition-colors">
                     Contact
-                  </button>
+                  </Link>
                 </li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-4">Legal</h3>
-              <ul className="space-y-2">
                 <li>
                   <Link
                     to="/privacy"
@@ -94,8 +98,8 @@ export const Footer: React.FC = () => {
             </div>
           </div>
 
-          <div className="border-t border-gray-200 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <p className="text-sm text-gray-600">© 2024 Autoloom. All rights reserved.</p>
+          <div className="border-t border-gray-200 mt-4 md:mt-12 pt-3 md:pt-8 flex flex-col md:flex-row justify-between items-center">
+            <p className="text-sm text-gray-600">© 2025 Autoloom. All rights reserved.</p>
           </div>
         </div>
       </footer>

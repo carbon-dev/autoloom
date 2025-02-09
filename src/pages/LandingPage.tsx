@@ -6,18 +6,39 @@ import { MainFeatures } from '../components/landing/MainFeatures';
 import { Pricing } from '../components/landing/Pricing';
 import { ValueProps } from '../components/landing/ValueProps';
 import { Footer } from '../components/Footer';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 
 export const LandingPage: React.FC = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const clearAuth = useAuthStore((state) => state.clearAuth);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     // Clear auth state when landing page is loaded
     clearAuth?.();
   }, [clearAuth]);
+
+  useEffect(() => {
+    // Check if we have a section to scroll to
+    if (location.state?.scrollTo) {
+      const element = document.getElementById(location.state.scrollTo);
+      if (element) {
+        // Small delay to ensure the page is loaded
+        setTimeout(() => {
+          const headerOffset = 80; // Same offset as in Footer
+          const elementPosition = element.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+          });
+        }, 100);
+      }
+    }
+  }, [location]);
 
   return (
     <div className="bg-white overflow-x-hidden">

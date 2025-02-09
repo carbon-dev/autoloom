@@ -36,14 +36,11 @@ export const Features: React.FC = () => {
         }
         return current + 1;
       });
-    }, 3000); // Cycle every 3 seconds
+    }, 3000);
 
     return () => clearInterval(interval);
   }, []);
 
-  // Using the same base image for both states
-  const carImage = "https://images.unsplash.com/photo-1583121274602-3e2820c69888?auto=format&fit=crop&q=80";
-  
   return (
     <div className="relative bg-white py-12">
       <Grid className="opacity-[0.02]" />
@@ -98,13 +95,15 @@ export const Features: React.FC = () => {
             ))}
           </div>
 
-          <div className="relative group">
+          <div className="relative h-[400px] group">
             <div className="absolute -inset-2 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-xl opacity-20 group-hover:opacity-30 blur transition duration-500" />
-            <div className="relative">
+            <div className="relative h-full">
               <BeforeAfterSlider
-                beforeImage={carImage}
-                afterImage={carImage}
-                className="shadow-2xl h-[280px]"
+                beforeImage="https://images.unsplash.com/photo-1583121274602-3e2820c69888?auto=format&fit=crop&q=80"
+                afterImage="https://images.unsplash.com/photo-1583121274602-3e2820c69888?auto=format&fit=crop&q=80"
+                className="h-full rounded-lg shadow-2xl"
+                beforeLabel="Original"
+                afterLabel="No Background"
                 showBackground={false}
               />
             </div>
