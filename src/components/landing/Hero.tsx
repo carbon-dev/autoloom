@@ -34,7 +34,7 @@ export const Hero = () => {
               <div className="absolute -top-8 -left-8 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl animate-pulse" />
               <div className="relative">
                 <h1 className="font-display text-4xl md:text-4xl lg:text-6xl font-bold mb-6 leading-[1.1] text-gray-900">
-                  Your dealership's newest (and best) employee.
+                  Your dealership's newest, most productive employee.
                 </h1>
                 <p className="text-lg lg:text-xl text-gray-600 mb-8 leading-relaxed">
                   Sell your inventory up to 32% faster with AI-powered background removal, virtual showrooms, and custom branding. Let your dealership stand out in the blink of an eye.

@@ -12,7 +12,7 @@ export const Logo: React.FC<LogoProps> = ({ className = '' }) => {
   return (
     <Link to="/" className={`inline-flex items-center ${className}`}>
       {!imageError ? (
-        <div className="h-8 relative">
+        <div className="h-7 relative">
           <img
             src="/autoloom.png"
             alt="Autoloom"
@@ -22,8 +22,8 @@ export const Logo: React.FC<LogoProps> = ({ className = '' }) => {
         </div>
       ) : (
         <>
-          <Scissors className="h-8 w-8 text-indigo-600" />
-          <span className="ml-2 text-xl font-bold text-gray-900">Autoloom</span>
+          <Scissors className="h-7 w-7 text-indigo-600" />
+          <span className="ml-2 text-lg font-bold text-gray-900">Autoloom</span>
         </>
       )}
     </Link>
