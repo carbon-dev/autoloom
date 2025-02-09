@@ -56,8 +56,8 @@ export const MainFeatures: React.FC = () => {
 
       <div className="relative max-w-7xl mx-auto px-4">
         <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold mb-4 text-gray-900">Shouldn't your photos sell cars for you?</h2>
-          <p className="text-xl text-gray-600">Everything you need for professional image processing</p>
+          <h2 className="text-4xl font-bold mb-4 text-gray-900">Your photos should be your best salesperson</h2>
+          <p className="text-xl text-gray-600">Features you need, none of the fluff.</p>
         </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
           {features.map((feature, index) => (

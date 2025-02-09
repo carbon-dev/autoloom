@@ -12,7 +12,7 @@ export const ValueProps: React.FC = () => {
       
       <div className="relative max-w-7xl mx-auto px-4 pt-16 pb-4">
         <h2 className="text-4xl font-bold text-center text-gray-900 mb-2">
-          We don't overcomplicate things.
+          We don't overcomplicate it
         </h2>
         <p className="text-xl text-center text-gray-600">
           AI-powered background removal and replacement, done right.
@@ -27,7 +27,7 @@ export const ValueProps: React.FC = () => {
               Virtually teleport your inventory anywhere
             </h2>
             <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-              Car photos with simple, neutral backgrounds sell faster. autoloom removes backgrounds with incredible precision, letting you place vehicles in any setting.
+              Car photos with simple, neutral backgrounds sell faster. Autoloom removes backgrounds with incredible precision, letting you place vehicles in any setting.
             </p>
             <ul className="space-y-4">
               <li className="flex items-start">
@@ -76,7 +76,7 @@ export const ValueProps: React.FC = () => {
             </h2>
             <p className="text-lg text-gray-600 mb-8 leading-relaxed">
               In today's digital-first car buying experience, your photos need to 
-              capture attention and drive engagement. autoloom helps you create 
+              capture attention and drive engagement. Autoloom helps you create 
               imagery that converts browsers into buyers.
             </p>
             <ul className="space-y-4">

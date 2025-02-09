@@ -68,8 +68,8 @@ export const Pricing: React.FC = () => {
       
       <div className="relative max-w-7xl mx-auto px-4">
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold mb-4 text-gray-900">Fair, Transparent Pricing</h2>
-          <p className="text-xl text-gray-600">Choose the plan that's right for you</p>
+          <h2 className="text-4xl font-bold mb-4 text-gray-900">Pricing for all budgets</h2>
+          <p className="text-xl text-gray-600">Choose the plan that's right for you.</p>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">

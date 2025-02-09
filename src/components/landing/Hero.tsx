@@ -29,7 +29,7 @@ export const Hero = () => {
       
       <div className="relative w-full overflow-hidden">
         <div className="relative max-w-7xl mx-auto px-4 py-8 md:py-16">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          <div className="grid lg:grid-cols-[55%_45%] gap-12 lg:gap-16 items-center">
             <div className="relative text-center lg:text-left">
               <div className="absolute -top-8 -left-8 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl animate-pulse" />
               <div className="relative">
@@ -70,7 +70,7 @@ export const Hero = () => {
                 </div>
               </div>
             </div>
-            <div className="lg:ml-auto lg:w-[120%]">
+            <div className="lg:ml-auto lg:w-[95%]">
               <QuickUpload />
             </div>
           </div>
