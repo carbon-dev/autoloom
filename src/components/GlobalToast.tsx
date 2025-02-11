@@ -4,12 +4,13 @@ import { Toast } from './Toast';
 
 export const GlobalToast = () => {
   const toastStatus = useImageStore((state) => state.toastStatus);
+  const processingCount = useImageStore((state) => state.processingCount);
 
   if (!toastStatus) return null;
 
   return (
     <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-[9999]">
-      <Toast status={toastStatus} />
+      <Toast status={toastStatus} count={processingCount} />
     </div>
   );
 }; 

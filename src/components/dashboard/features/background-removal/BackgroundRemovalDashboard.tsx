@@ -23,6 +23,7 @@ interface ImageStore {
   activeTab: 'uploaded' | 'processed';
   processImages: () => Promise<void>;
   setActiveTab: (tab: 'uploaded' | 'processed') => void;
+  loadImages: () => Promise<void>;
 }
 
 interface TabProps {
@@ -30,16 +31,18 @@ interface TabProps {
   count?: number;
   isActive: boolean;
   onClick: () => void;
+  className?: string;
 }
 
-const Tab: React.FC<TabProps> = ({ label, count, isActive, onClick }) => (
+const Tab: React.FC<TabProps> = ({ label, count, isActive, onClick, className }) => (
   <button
     onClick={onClick}
     className={cn(
       'px-4 py-2 text-sm font-medium rounded-lg',
       isActive
         ? 'bg-indigo-50 text-indigo-700'
-        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50',
+      className
     )}
   >
     {label}
@@ -60,9 +63,14 @@ export const BackgroundRemovalDashboard: React.FC = () => {
   const backgroundImages = useImageStore((state) => state.backgroundImages);
   const activeTab = useImageStore((state) => state.activeTab);
   const setActiveTab = useImageStore((state) => state.setActiveTab);
+  const loadImages = useImageStore((state) => state.loadImages);
   
   const pendingCount = images.filter(img => img.status === 'pending').length;
   const processedCount = images.filter(img => img.status === 'completed').length;
+
+  React.useEffect(() => {
+    loadImages();
+  }, [loadImages]);
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -88,43 +96,47 @@ export const BackgroundRemovalDashboard: React.FC = () => {
       </div>
 
       {activeTab === 'uploaded' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Source Images Section */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <div className="mb-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Images to Process</h3>
-                  <p className="text-sm text-gray-500">Trial Images Left: {user?.trialImagesLeft}</p>
+        <div className="relative">
+          <div className="w-[calc(50%-1rem)] pr-4">
+            {/* Source Images Section */}
+            <div className="bg-white rounded-xl shadow-sm p-6">
+              <div className="mb-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Images to Process</h3>
+                    <p className="text-sm text-gray-500">Trial Images Left: {user?.trialImagesLeft}</p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <ImageUploader
-              title="Upload Images"
-              description="Select the images you want to remove backgrounds from"
-              helpText="Drop your images here, or click to browse (PNG, JPG, JPEG up to 5MB)"
-              isBackground={false}
-            />
+              <ImageUploader
+                title="Upload Images"
+                description="Select the images you want to remove backgrounds from"
+                helpText="Drop your images here, or click to browse (PNG, JPG, JPEG up to 5MB)"
+                isBackground={false}
+              />
+            </div>
           </div>
 
           {/* Background Images Section */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <div className="mb-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Background Images</h3>
-                  <p className="text-sm text-gray-500">{backgroundImages.length} Background{backgroundImages.length !== 1 ? 's' : ''} Available</p>
+          <div className="absolute top-0 right-0 w-[calc(50%-1rem)]">
+            <div className="bg-white rounded-xl shadow-sm p-6">
+              <div className="mb-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Background Images</h3>
+                    <p className="text-sm text-gray-500">{backgroundImages.length} Background{backgroundImages.length !== 1 ? 's' : ''} Available</p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <ImageUploader
-              title="Background Images"
-              description="Upload images to use as new backgrounds for your processed images"
-              helpText="Drop background images here, or click to browse (PNG, JPG, JPEG up to 5MB)"
-              isBackground={true}
-            />
+              <ImageUploader
+                title="Background Images"
+                description="Upload images to use as new backgrounds for your processed images"
+                helpText="Drop background images here, or click to browse (PNG, JPG, JPEG up to 5MB)"
+                isBackground={true}
+              />
+            </div>
           </div>
         </div>
       ) : (

@@ -54,6 +54,7 @@ interface ImageStore {
   toastStatus: 'processing' | 'complete' | null;
   activeTab: 'uploaded' | 'processed';
   addImages: (files: File[], isBackground?: boolean) => void;
+  setToastStatus: (status: 'processing' | 'complete' | null) => void;
 }
 
 export const ImageUploader: React.FC<ImageUploaderProps> = ({ 
@@ -64,6 +65,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   isBackground = false
 }) => {
   const addImages = useImageStore((state) => state.addImages);
+  const setToastStatus = useImageStore((state) => state.setToastStatus);
   const [isDragging, setIsDragging] = React.useState(false);
   const [selectedFiles, setSelectedFiles] = React.useState<File[]>([]);
 
@@ -112,8 +114,13 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   const handleUpload = () => {
     if (selectedFiles.length > 0) {
       console.log('Uploading files:', selectedFiles.map(f => f.name));
+      setToastStatus('processing');
       addImages(selectedFiles, isBackground);
       setSelectedFiles([]);
+      setTimeout(() => {
+        setToastStatus('complete');
+        setTimeout(() => setToastStatus(null), 3000);
+      }, 1000);
     }
   };
 
