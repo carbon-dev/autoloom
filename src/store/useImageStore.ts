@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { ImageFile } from '../types';
+import { useAuthStore } from './useAuthStore';
+import { supabase } from '../lib/supabase';
 
 interface Image {
   id: string;
@@ -57,18 +58,12 @@ export const useImageStore = create<ImageStore>((set, get) => ({
         images: [...state.images, ...newImages],
       };
     });
-
-    if (!isBackground) {
-      get().processImages();
-    }
   },
 
   updateImageStatus: (id, status, processedUrl, error) => {
     set((state) => ({
+      ...state,
       images: state.images.map((img) =>
-        img.id === id ? { ...img, status, processedUrl, error } : img
-      ),
-      backgroundImages: state.backgroundImages.map((img) =>
         img.id === id ? { ...img, status, processedUrl, error } : img
       ),
     }));
@@ -102,40 +97,88 @@ export const useImageStore = create<ImageStore>((set, get) => ({
     const { images, updateImageStatus, setToastStatus } = get();
     const pendingImages = images.filter((img) => img.status === 'pending');
 
-    if (pendingImages.length > 0) {
-      setToastStatus('processing');
+    if (pendingImages.length === 0) return;
+
+    setToastStatus('processing');
+    const user = useAuthStore.getState().user;
+    
+    if (!user) {
+      console.error('No user found');
+      return;
     }
 
-    for (const image of pendingImages) {
-      console.log('Processing image:', image.id);
-      updateImageStatus(image.id, 'processing');
-      
-      try {
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-        console.log('Image completed:', image.id);
-        updateImageStatus(image.id, 'completed', image.preview);
-      } catch (error) {
-        console.error('Processing failed:', error);
-        updateImageStatus(
-          image.id,
-          'error',
-          undefined,
-          'Failed to process image'
-        );
+    if (user.subscription === 'trial' && user.trialImagesLeft < pendingImages.length) {
+      setToastStatus(null);
+      // You might want to show an error message here
+      return;
+    }
+
+    let successCount = 0;
+
+    try {
+      for (const image of pendingImages) {
+        updateImageStatus(image.id, 'processing');
+        
+        try {
+          // Simulate processing delay
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          
+          // In a real implementation, you would upload the image to your backend here
+          // const response = await uploadAndProcess(image.file);
+          // const processedUrl = response.url;
+          
+          // For now, we'll just use the preview as the processed image
+          updateImageStatus(image.id, 'completed', image.preview);
+          successCount++;
+        } catch (error) {
+          console.error('Processing failed:', error);
+          updateImageStatus(
+            image.id,
+            'error',
+            undefined,
+            'Failed to process image'
+          );
+        }
       }
-    }
 
-    console.log('All images processed');
-    if (pendingImages.length > 0) {
+      if (successCount > 0) {
+        // Update the user's stats in Supabase
+        const { error } = await supabase
+          .from('customers')
+          .update({
+            processed_images: user.processedImages + successCount,
+            trial_images_left: user.subscription === 'trial' 
+              ? user.trialImagesLeft - successCount 
+              : user.trialImagesLeft
+          })
+          .eq('id', user.id);
+
+        if (!error) {
+          // Update local state
+          useAuthStore.setState((state) => ({
+            user: state.user ? {
+              ...state.user,
+              processedImages: state.user.processedImages + successCount,
+              trialImagesLeft: state.user.subscription === 'trial'
+                ? state.user.trialImagesLeft - successCount
+                : state.user.trialImagesLeft
+            } : null
+          }));
+        }
+
+        // Switch to the processed images tab after successful processing
+        set({ activeTab: 'processed' });
+      }
+
       setToastStatus('complete');
       setTimeout(() => setToastStatus(null), 5000);
+    } catch (error) {
+      console.error('Processing failed:', error);
+      setToastStatus(null);
     }
   },
 
   setActiveTab: (tab) => {
-    console.log('Setting active tab:', tab);
-    console.log('Current images:', get().images);
     set({ activeTab: tab });
-    console.log('New active tab:', get().activeTab);
   },
 }));
