@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, Image, Images, CreditCard, Settings, LogOut } from 'lucide-react';
+import { Home, Image, CreditCard, Settings, LogOut } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 
 interface DashboardSidebarProps {
@@ -63,20 +63,6 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ onClose, onL
           >
             <Image className="mr-3 h-5 w-5" />
             Background Removal
-          </NavLink>
-
-          <NavLink
-            to="/dashboard/my-images"
-            className={({ isActive }) =>
-              `group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
-                isActive
-                  ? 'bg-gray-100 text-gray-900'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              }`
-            }
-          >
-            <Images className="mr-3 h-5 w-5" />
-            My Images
           </NavLink>
 
           <NavLink

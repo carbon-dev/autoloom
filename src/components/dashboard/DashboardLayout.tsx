@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardSidebar } from './DashboardSidebar';
 import { DashboardNavbar } from './DashboardNavbar';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useImageStore } from './stores/useImageStore';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -10,6 +11,12 @@ interface DashboardLayoutProps {
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const loadImages = useImageStore((state) => state.loadImages);
+
+  useEffect(() => {
+    // Load images when dashboard mounts
+    loadImages();
+  }, [loadImages]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -19,7 +26,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
       {/* Mobile sidebar backdrop */}
       {isSidebarOpen && (
         <div 
-          className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed top-[4rem] inset-x-0 bottom-0 bg-gray-900/50 z-40 lg:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}

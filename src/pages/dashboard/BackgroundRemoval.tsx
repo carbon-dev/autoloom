@@ -12,6 +12,7 @@ export const BackgroundRemoval = () => {
   const user = useAuthStore((state) => state.user);
   const activeTab = useImageStore((state) => state.activeTab);
   const setActiveTab = useImageStore((state) => state.setActiveTab);
+  const loadImages = useImageStore((state) => state.loadImages);
   
   const uploadedCount = useImageStore((state) => 
     state.images.filter(img => img.status === 'pending').length
@@ -21,6 +22,10 @@ export const BackgroundRemoval = () => {
     console.log('Processed count:', count);
     return count;
   });
+
+  useEffect(() => {
+    loadImages();
+  }, [loadImages]);
 
   console.log('BackgroundRemoval render - activeTab:', activeTab);
 

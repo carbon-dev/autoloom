@@ -17,7 +17,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSignu
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const login = useAuthStore((state) => state.login);
+  const initializeUser = useAuthStore((state) => state.initializeUser);
 
   useEffect(() => {
     if (isOpen) {
@@ -34,6 +34,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSignu
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
     
     if (!email || !password) {
       setError('Please fill in all fields');
@@ -42,21 +43,21 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSignu
     }
     
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data: { user }, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password
       });
 
-      console.log('Auth response:', { data, error }); // Debug log
+      if (authError) throw authError;
 
-      if (error) throw error;
-
-      login(email);
-      onClose();
-      navigate('/dashboard');
-    } catch (error) {
-      console.error('Login error:', error); // Debug log
-      setError(error.message || 'Failed to login. Please try again.');
+      if (user) {
+        await initializeUser(user);
+        onClose();
+        navigate('/dashboard');
+      }
+    } catch (error: any) {
+      console.error('Login error:', error);
+      setError(error.message || 'Failed to log in');
     } finally {
       setIsLoading(false);
     }
@@ -67,15 +68,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSignu
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.hostname === 'localhost' 
-            ? 'http://localhost:3000'
-            : 'https://autoloom.co'
+          redirectTo: `${window.location.origin}/dashboard`
         }
       });
 
       if (error) throw error;
-    } catch (error) {
-      setError(error.message);
+    } catch (error: any) {
+      console.error('Google login error:', error);
+      setError(error.message || 'Failed to log in with Google');
     }
   };
 

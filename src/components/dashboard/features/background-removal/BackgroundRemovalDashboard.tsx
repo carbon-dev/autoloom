@@ -89,7 +89,6 @@ export const BackgroundRemovalDashboard: React.FC = () => {
         />
         <Tab
           label="My Images"
-          count={pendingCount + processedCount}
           isActive={activeTab === 'processed'}
           onClick={() => setActiveTab('processed')}
         />
