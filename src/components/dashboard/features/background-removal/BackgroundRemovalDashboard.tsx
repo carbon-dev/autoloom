@@ -69,8 +69,34 @@ export const BackgroundRemovalDashboard: React.FC = () => {
   const processedCount = images.filter(img => img.status === 'completed').length;
 
   React.useEffect(() => {
+    console.warn('🔄 BackgroundRemovalDashboard mounted, loading images...');
     loadImages();
   }, [loadImages]);
+
+  React.useEffect(() => {
+    console.warn('📊 BackgroundRemovalDashboard state:', {
+      activeTab,
+      totalImages: images.length,
+      pendingCount,
+      processedCount,
+      backgroundImagesCount: backgroundImages.length
+    });
+  }, [activeTab, images, pendingCount, processedCount, backgroundImages]);
+
+  const handleTabChange = (tab: 'uploaded' | 'processed') => {
+    console.warn('👆 Tab change requested:', {
+      currentTab: activeTab,
+      newTab: tab,
+      totalImages: images.length,
+      pendingCount,
+      processedCount
+    });
+    setActiveTab(tab);
+    if (tab === 'processed') {
+      console.warn('🔄 Reloading images for processed tab...');
+      loadImages();
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -85,12 +111,12 @@ export const BackgroundRemovalDashboard: React.FC = () => {
         <Tab
           label="Upload"
           isActive={activeTab === 'uploaded'}
-          onClick={() => setActiveTab('uploaded')}
+          onClick={() => handleTabChange('uploaded')}
         />
         <Tab
           label="My Images"
           isActive={activeTab === 'processed'}
-          onClick={() => setActiveTab('processed')}
+          onClick={() => handleTabChange('processed')}
         />
       </div>
 

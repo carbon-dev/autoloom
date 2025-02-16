@@ -9,7 +9,6 @@ import { useAuthStore } from '../../../store/useAuthStore';
 const navigation = [
   { name: 'Overview', href: '/dashboard', icon: Home },
   { name: 'Background Removal', href: '/dashboard/remove-background', icon: Image },
-  { name: 'My Images', href: '/dashboard/my-images', icon: Images },
   { name: 'Billing', href: '/dashboard/billing', icon: CreditCard },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];

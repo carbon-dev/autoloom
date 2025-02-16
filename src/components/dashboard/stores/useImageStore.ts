@@ -2,13 +2,32 @@ import { create } from 'zustand';
 import { ImageFile } from '../types';
 import { useAuthStore } from '../../../store/useAuthStore';
 import { supabase } from '../../../lib/supabase';
+import { useToastStore } from '../shared/useToast';
 
 // Create a simple event emitter for image processing completion
 type Listener = () => void;
+type CompletionListener = (imageId: string) => void;
 const listeners = new Set<Listener>();
+const completionListeners = new Set<CompletionListener>();
+const completedImages = new Set<string>();
+const deletingImages = new Set<string>();
+let lastDeletionTime = Date.now();
 
-const notifyImageProcessed = () => {
-  listeners.forEach(listener => listener());
+const notifyImageProcessed = (imageId: string) => {
+  // Only notify if we haven't already notified for this image
+  if (!completedImages.has(imageId)) {
+    console.log('Notifying listeners of image completion:', imageId);
+    completedImages.add(imageId);
+    
+    listeners.forEach(listener => {
+      console.log('Calling general listener');
+      listener();
+    });
+    completionListeners.forEach(listener => {
+      console.log('Calling completion listener with imageId:', imageId);
+      listener(imageId);
+    });
+  }
 };
 
 interface ImageStore {
@@ -23,6 +42,7 @@ interface ImageStore {
   processingCount: number;
   totalCount: number;
   onImageProcessed: (listener: Listener) => () => void;
+  onImageComplete: (listener: CompletionListener) => () => void;
 }
 
 export const useImageStore = create<ImageStore>((set, get) => ({
@@ -37,29 +57,31 @@ export const useImageStore = create<ImageStore>((set, get) => ({
       listeners.delete(listener);
     };
   },
+
+  onImageComplete: (listener: CompletionListener) => {
+    console.log('Adding completion listener');
+    completionListeners.add(listener);
+    return () => {
+      console.log('Removing completion listener');
+      completionListeners.delete(listener);
+    };
+  },
   
   loadImages: async () => {
     const user = useAuthStore.getState().user;
-    if (!user) {
-      console.log('No user found when loading images');
-      return;
-    }
+    if (!user) return;
 
     try {
-      console.log('Loading images for user:', user.id);
       const { data: images, error } = await supabase
         .from('processed_images')
         .select('*')
         .eq('customer_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Supabase error loading images:', error);
-        throw error;
-      }
-
+      if (error) throw error;
+      
       if (images) {
-        console.log('Loaded images:', images);
+        console.log('Loading images from database:', images);
         const loadedImages: ImageFile[] = images.map(img => ({
           id: img.id,
           file: new File([], 'placeholder'),
@@ -68,70 +90,122 @@ export const useImageStore = create<ImageStore>((set, get) => ({
           status: 'completed' as const,
         }));
 
-        // Get current processing images
-        const currentState = get();
-        const processingImages = currentState.images.filter(img => 
-          img.status === 'processing' || img.status === 'pending'
-        );
-
-        // Combine and update state
+        // Always set the full state, don't try to merge with existing
         set({
-          ...currentState,
-          images: [...processingImages, ...loadedImages],
-          processingCount: processingImages.length
+          images: loadedImages,
+          processingCount: 0,
+          totalCount: loadedImages.length
+        });
+      } else {
+        set({
+          images: [],
+          processingCount: 0,
+          totalCount: 0
         });
       }
     } catch (error) {
       console.error('Error loading images:', error);
+      useToastStore.getState().addToast({
+        title: 'Error',
+        description: 'Failed to load images',
+        duration: 5000,
+        type: 'error'
+      });
     }
   },
 
   addImages: (files) => {
     console.log('Adding images to store:', files);
-    const newImages = Array.from(files).map((file) => ({
-      id: crypto.randomUUID().replace(/-/g, ''), // Remove hyphens from UUID
-      file,
-      status: 'pending' as const,
-      preview: URL.createObjectURL(file)
-    }));
+    const newImages = Array.from(files).map((file) => {
+      const objectUrl = URL.createObjectURL(file);
+      console.log('Created object URL for preview:', objectUrl);
+      return {
+        id: crypto.randomUUID(),
+        file,
+        status: 'pending' as const,
+        preview: objectUrl,
+        processedUrl: undefined
+      };
+    });
     console.log('Created new image objects:', newImages);
 
+    // Ensure we're not duplicating images
     set((state) => {
+      const existingIds = new Set(state.images.map(img => img.id));
+      const uniqueNewImages = newImages.filter(img => !existingIds.has(img.id));
+      
       const updatedState = {
-        images: [...state.images, ...newImages],
-        totalCount: state.totalCount + newImages.length,
-        processingCount: state.processingCount + newImages.length
+        images: [...state.images, ...uniqueNewImages],
+        totalCount: state.totalCount + uniqueNewImages.length,
+        processingCount: state.processingCount + uniqueNewImages.length
       };
       console.log('Updated store state:', updatedState);
       return updatedState;
     });
 
-    console.log('Starting image processing...');
-    get().processImages();
+    // Delay slightly to ensure state is updated before processing
+    setTimeout(() => {
+      console.log('Starting image processing...');
+      get().processImages();
+    }, 100);
   },
 
-  removeImage: async (id) => {
+  removeImage: async (id: string) => {
     const user = useAuthStore.getState().user;
-    if (!user) return;
+    if (!user) {
+      useToastStore.getState().addToast({
+        title: 'Error',
+        description: 'You must be logged in to delete images.',
+        duration: 5000,
+        type: 'error'
+      });
+      return;
+    }
 
-    set((state) => ({
-      images: state.images.filter(img => img.id !== id)
-    }));
+    // Prevent concurrent deletions
+    if (deletingImages.has(id)) {
+      console.log('Already deleting image:', id);
+      return;
+    }
+    deletingImages.add(id);
 
     try {
-      // Delete from storage
-      const { error: storageError } = await supabase.storage
-        .from('images')
-        .remove([
-          `${user.id}/${id}/original.jpg`,
-          `${user.id}/${id}/processed.png`
-        ]);
+      console.log('Starting deletion for image:', id);
 
-      if (storageError) {
-        console.error('Error deleting from storage:', storageError);
+      // First verify the image exists
+      const { data: imageData, error: fetchError } = await supabase
+        .from('processed_images')
+        .select('*')
+        .eq('id', id)
+        .eq('customer_id', user.id)
+        .maybeSingle();
+
+      if (fetchError) {
+        console.error('Error fetching image:', fetchError);
+        throw fetchError;
       }
 
+      if (!imageData) {
+        console.log('Image already deleted or not found:', id);
+        // Update UI to remove the image if it's still there
+        set(state => ({
+          ...state,
+          images: state.images.filter(img => img.id !== id),
+          totalCount: Math.max(0, state.totalCount - 1)
+        }));
+        return;
+      }
+
+      // Mark as deleting in UI
+      set(state => ({
+        ...state,
+        images: state.images.map(img => 
+          img.id === id ? { ...img, status: 'deleting' } : img
+        )
+      }));
+
       // Delete from database
+      console.log('Deleting from database...');
       const { error: dbError } = await supabase
         .from('processed_images')
         .delete()
@@ -139,32 +213,90 @@ export const useImageStore = create<ImageStore>((set, get) => ({
         .eq('customer_id', user.id);
 
       if (dbError) {
-        console.error('Error deleting from database:', dbError);
+        console.error('Database deletion error:', dbError);
+        throw dbError;
       }
+
+      // Delete from storage
+      await supabase.storage
+        .from('images')
+        .remove([`${user.id}/${id}/original.jpg`]);
+
+      // Remove from UI
+      set(state => ({
+        ...state,
+        images: state.images.filter(img => img.id !== id),
+        totalCount: Math.max(0, state.totalCount - 1)
+      }));
+
+      // Reload images to ensure consistency
+      await get().loadImages();
+
+      console.log('Successfully deleted image:', id);
+      useToastStore.getState().addToast({
+        title: 'Success',
+        description: 'Image deleted successfully',
+        duration: 3000,
+      });
+
     } catch (error) {
-      console.error('Error removing image:', error);
+      console.error('Error during deletion:', error);
+      
+      // Restore the image state
+      set(state => ({
+        ...state,
+        images: state.images.map(img => 
+          img.id === id ? { ...img, status: 'completed' } : img
+        )
+      }));
+
+      useToastStore.getState().addToast({
+        title: 'Error',
+        description: 'Failed to delete image. Please try again.',
+        duration: 5000,
+        type: 'error'
+      });
+    } finally {
+      deletingImages.delete(id);
     }
   },
 
-  updateImageStatus: (id, status, processedUrl, error) => {
+  updateImageStatus: (id: string, status: 'pending' | 'processing' | 'completed' | 'error', processedUrl?: string, error?: string) => {
     set((state) => {
-      const newImages = state.images.map(img => 
-        img.id === id ? { ...img, status, processedUrl, error } : img
+      const updatedImages = state.images.map((img) =>
+        img.id === id ? { 
+          ...img, 
+          status,
+          preview: processedUrl || img.preview,
+          processedUrl: processedUrl || img.processedUrl,
+          error 
+        } : img
       );
+
       return {
-        images: newImages,
-        processingCount: status === 'completed' || status === 'error' 
-          ? Math.max(0, state.processingCount - 1) 
-          : state.processingCount
+        ...state,
+        images: updatedImages,
+        processingCount: updatedImages.filter(img => 
+          img.status === 'processing' || img.status === 'pending'
+        ).length
       };
     });
+
+    if (status === 'completed') {
+      notifyImageProcessed(id);
+    }
   },
 
   processImages: async () => {
     const { images, updateImageStatus } = get();
     const user = useAuthStore.getState().user;
     if (!user) {
-      console.log('No user found when processing images');
+      useToastStore.getState().addToast({
+        title: 'Error',
+        description: 'You must be logged in to upload images.',
+        duration: 5000,
+        type: 'error'
+      });
       return;
     }
 
@@ -174,129 +306,105 @@ export const useImageStore = create<ImageStore>((set, get) => ({
     for (const image of pendingImages) {
       console.log('Processing image:', image.id);
       updateImageStatus(image.id, 'processing');
+      
       try {
-        // Upload original image to storage
-        const originalFileName = `${user.id}/${image.id}/original.jpg`;
-
-        console.log('Preparing original image for upload:', {
-          fileName: originalFileName,
-          fileType: image.file.type,
-          fileSize: image.file.size
-        });
-
-        // Create a timeout promise
-        const timeout = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Upload timed out after 30 seconds')), 30000)
-        );
-
-        console.log('Starting upload with timeout...');
-        
-        try {
-          // Upload with timeout
-          const { data: originalUpload, error: uploadError } = await Promise.race([
-            supabase.storage
-              .from('images')
-              .upload(originalFileName, image.file, {
-                contentType: image.file.type,
-                upsert: true
-              }),
-            timeout
-          ]) as { data: any, error: any };
-
-          if (uploadError) {
-            console.error('Original image upload error:', uploadError);
-            throw new Error(`Failed to upload original image: ${uploadError.message}`);
-          }
-
-          if (!originalUpload) {
-            throw new Error('Upload failed - no response from server');
-          }
-
-          console.log('Original image uploaded successfully:', originalUpload);
-
-          // Get public URL
-          console.log('Getting public URL');
-          const { data: originalUrlData } = supabase.storage
-            .from('images')
-            .getPublicUrl(originalFileName);
-
-          if (!originalUrlData) {
-            throw new Error('Failed to generate public URL');
-          }
-
-          const originalUrl = originalUrlData.publicUrl;
-
-          console.log('Got public URL:', originalUrl);
-
-          const dbRecord = {
-            id: image.id,
-            customer_id: user.id,
-            original_url: originalUrl,
-            processed_url: originalUrl, // Temporarily use the original URL until we implement background removal
-            created_at: new Date().toISOString()
-          };
-          console.log('Storing in database:', dbRecord);
-
-          // Store the image record in the database
-          const { data: dbData, error: dbError } = await supabase
-            .from('processed_images')
-            .insert(dbRecord)
-            .select()
-            .single();
-
-          if (dbError) {
-            console.error('Database insert error:', dbError);
-            throw new Error(`Failed to save image data: ${dbError.message}`);
-          }
-          console.log('Database record created successfully:', dbData);
-
-          // After successful upload and database insert, update all states
-          console.log('Updating states after successful processing');
-
-          // First update auth store
-          const { updateProcessedImages } = useAuthStore.getState();
-          await updateProcessedImages();
-
-          // Then update image status
-          updateImageStatus(image.id, 'completed');
-
-          // Finally update the full image state
-          set((state) => {
-            const updatedImages = state.images.map(img => 
-              img.id === image.id 
-                ? { 
-                    ...img, 
-                    status: 'completed' as const,
-                    preview: originalUrl
-                  }
-                : img
-            );
-
-            return {
-              ...state,
-              images: updatedImages,
-              processingCount: Math.max(0, state.processingCount - 1)
-            };
+        // Upload original image
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('images')
+          .upload(`${user.id}/${image.id}/original.jpg`, image.file, {
+            contentType: image.file.type,
+            upsert: true
           });
 
-          // Notify listeners that an image has been processed
-          notifyImageProcessed();
-
-          console.log('Successfully processed image:', image.id);
-        } catch (error) {
-          console.error('Error processing image:', error);
-          const errorMessage = error instanceof Error ? error.message : 'Failed to process image';
-          updateImageStatus(image.id, 'error', undefined, errorMessage);
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          throw uploadError;
         }
+
+        // Get the public URL using Supabase's createSignedUrl method
+        const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+          .from('images')
+          .createSignedUrl(`${user.id}/${image.id}/original.jpg`, 60 * 60 * 24 * 7); // 7 days expiry
+
+        if (signedUrlError || !signedUrlData?.signedUrl) {
+          console.error('Failed to get signed URL:', signedUrlError);
+          throw signedUrlError || new Error('Failed to get signed URL');
+        }
+
+        const publicUrl = signedUrlData.signedUrl;
+        console.log('Got signed URL:', publicUrl);
+
+        // Store in database
+        const { error: dbError } = await supabase
+          .from('processed_images')
+          .insert({
+            id: image.id,
+            customer_id: user.id,
+            original_url: publicUrl,
+            processed_url: publicUrl,
+            created_at: new Date().toISOString()
+          });
+
+        if (dbError) {
+          console.error('Database error:', dbError);
+          throw dbError;
+        }
+
+        // Update status with the public URL
+        updateImageStatus(image.id, 'completed', publicUrl);
+        
+        // Update processed images count
+        const { updateProcessedImages } = useAuthStore.getState();
+        await updateProcessedImages();
+
+        useToastStore.getState().addToast({
+          title: 'Success',
+          description: 'Image uploaded successfully',
+          duration: 3000,
+        });
+
       } catch (error) {
         console.error('Error processing image:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Failed to process image';
-        updateImageStatus(image.id, 'error', undefined, errorMessage);
+        updateImageStatus(image.id, 'error', undefined, error instanceof Error ? error.message : 'Failed to process image');
+        useToastStore.getState().addToast({
+          title: 'Error',
+          description: 'Failed to process image. Please try again.',
+          duration: 5000,
+          type: 'error'
+        });
       }
     }
   },
 
   setActiveTab: (tab) => {
-    set({ activeTab: tab });
+    console.warn('Setting active tab:', { tab });
+    
+    set(state => {
+      // When switching to processed tab, reload images from Supabase
+      if (tab === 'processed') {
+        get().loadImages();
+        return {
+          ...state,
+          activeTab: tab,
+          // Clear the images array immediately, it will be populated by loadImages
+          images: [],
+          processingCount: 0,
+          totalCount: 0
+        };
+      }
+      
+      // When switching to upload tab, show only pending/processing
+      const pendingImages = state.images.filter(img => 
+        img.status === 'pending' || img.status === 'processing'
+      );
+      
+      return {
+        ...state,
+        activeTab: tab,
+        images: pendingImages,
+        processingCount: pendingImages.length,
+        totalCount: pendingImages.length
+      };
+    });
   }
 })); 

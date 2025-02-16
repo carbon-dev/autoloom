@@ -12,9 +12,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const loadImages = useImageStore((state) => state.loadImages);
+  console.warn('🏗️ DashboardLayout mounted');
 
   useEffect(() => {
     // Load images when dashboard mounts
+    console.warn('🔄 DashboardLayout useEffect triggered - calling loadImages()');
     loadImages();
   }, [loadImages]);
 

@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, X } from 'lucide-react';
 import { cn } from '../../../../utils/cn';
@@ -63,12 +63,17 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
 
   const handleUpload = () => {
     if (previewFiles.length > 0) {
+      console.log('Uploading files:', previewFiles.length);
+      // Add images to store first
       addImages(previewFiles);
+      
+      // Show processing toast notification
       toast({
         title: 'Processing images',
         description: 'Your images are being processed. This may take a few moments.',
       });
-      // Clear previews after upload
+
+      // Clear local preview state
       previewUrls.forEach(url => URL.revokeObjectURL(url));
       setPreviewFiles([]);
       setPreviewUrls([]);

@@ -1,13 +1,26 @@
 import React from 'react';
-import { useImageStore } from '../../../../store/useImageStore';
+import { useImageStore } from '../../stores/useImageStore';
 import { cn } from '../../../../utils/cn';
-import { X } from 'lucide-react';
+import { Trash2, RefreshCw } from 'lucide-react';
 
 export const ImageLibrary: React.FC = () => {
   const images = useImageStore((state) => state.images);
   const processImages = useImageStore((state) => state.processImages);
   const removeImage = useImageStore((state) => state.removeImage);
   const [selectedImages, setSelectedImages] = React.useState<Set<string>>(new Set());
+
+  // Add debugging for images state
+  React.useEffect(() => {
+    console.warn('📚 ImageLibrary - Images state:', {
+      totalImages: images.length,
+      images: images.map(img => ({
+        id: img.id,
+        status: img.status,
+        preview: img.preview,
+        processedUrl: img.processedUrl
+      }))
+    });
+  }, [images]);
 
   if (images.length === 0) {
     return (
@@ -23,6 +36,14 @@ export const ImageLibrary: React.FC = () => {
   const processingImages = images.filter(img => img.status === 'processing');
   const failedImages = images.filter(img => img.status === 'error');
 
+  // Add debugging for filtered images
+  console.warn('🖼️ ImageLibrary - Filtered images:', {
+    pending: pendingImages.length,
+    processing: processingImages.length,
+    completed: processedImages.length,
+    failed: failedImages.length
+  });
+
   const handleImageSelect = (imageId: string) => {
     setSelectedImages(prev => {
       const newSet = new Set(prev);
@@ -35,14 +56,11 @@ export const ImageLibrary: React.FC = () => {
     });
   };
 
-  const handleDelete = (e: React.MouseEvent, imageId: string) => {
+  const handleDelete = async (e: React.MouseEvent, imageId: string) => {
     e.stopPropagation();
-    removeImage(imageId);
-    setSelectedImages(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(imageId);
-      return newSet;
-    });
+    e.preventDefault();
+    console.log('Deleting image:', imageId);
+    await removeImage(imageId);
   };
 
   return (
@@ -84,7 +102,7 @@ export const ImageLibrary: React.FC = () => {
                   onClick={(e) => handleDelete(e, image.id)}
                   className="absolute top-2 right-2 p-1.5 bg-white rounded-full shadow-sm hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
-                  <X className="w-4 h-4 text-gray-500" />
+                  <Trash2 className="w-4 h-4 text-gray-500" />
                 </button>
                 <div className="absolute top-2 left-2">
                   <input
@@ -113,12 +131,12 @@ export const ImageLibrary: React.FC = () => {
                 <div className="absolute inset-0 flex items-center justify-center">
                   <img
                     src={image.preview}
-                    alt="Processing image"
+                    alt="Processing"
                     className="h-full w-full object-contain opacity-50"
                   />
-                </div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <RefreshCw className="h-8 w-8 text-indigo-600 animate-spin" />
+                  </div>
                 </div>
               </div>
             ))}
@@ -128,48 +146,80 @@ export const ImageLibrary: React.FC = () => {
 
       {processedImages.length > 0 && (
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900">Processed Images</h3>
+          <h3 className="text-lg font-semibold text-gray-900">Processed</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {processedImages.map((image) => (
-              <div
-                key={image.id}
-                className="relative group aspect-square bg-gray-100 rounded-lg overflow-hidden"
-              >
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <img
-                    src={image.processedUrl}
-                    alt="Processed image"
-                    className="h-full w-full object-contain"
-                  />
+            {processedImages.map((image) => {
+              console.log('Rendering processed image:', {
+                id: image.id,
+                status: image.status,
+                preview: image.preview,
+                processedUrl: image.processedUrl
+              });
+              
+              const imageUrl = image.preview;
+              if (!imageUrl) {
+                console.error('No URL available for image:', image.id);
+                return null;
+              }
+
+              const isDeleting = image.status === 'deleting';
+
+              return (
+                <div
+                  key={image.id}
+                  className="relative group aspect-square bg-gray-100 rounded-lg overflow-hidden"
+                >
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <img
+                      src={imageUrl}
+                      alt="Processed"
+                      className={cn(
+                        "h-full w-full object-contain",
+                        isDeleting && "opacity-50"
+                      )}
+                      onError={(e) => {
+                        console.error('Error loading image:', {
+                          id: image.id,
+                          url: imageUrl,
+                          error: e
+                        });
+                        const imgElement = e.target as HTMLImageElement;
+                        imgElement.style.display = 'none';
+                      }}
+                      onLoad={() => {
+                        console.log('Successfully loaded image:', {
+                          id: image.id,
+                          url: imageUrl
+                        });
+                      }}
+                    />
+                    {isDeleting && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <RefreshCw className="h-8 w-8 text-indigo-600 animate-spin" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-10 transition-opacity" />
+                  <button
+                    onClick={(e) => !isDeleting && handleDelete(e, image.id)}
+                    className={cn(
+                      "absolute top-2 right-2 p-1.5 bg-white rounded-full shadow-sm transition-opacity",
+                      isDeleting ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-100 opacity-0 group-hover:opacity-100"
+                    )}
+                    disabled={isDeleting}
+                  >
+                    <Trash2 className="w-4 h-4 text-gray-500" />
+                  </button>
                 </div>
-                <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-10 transition-opacity" />
-                <button
-                  onClick={(e) => handleDelete(e, image.id)}
-                  className="absolute top-2 right-2 p-1.5 bg-white rounded-full shadow-sm hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <X className="w-4 h-4 text-gray-500" />
-                </button>
-                <a
-                  href={image.processedUrl}
-                  download
-                  className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
-                >
-                  <span className="bg-white text-gray-900 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors">
-                    Download
-                  </span>
-                </a>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
 
       {failedImages.length > 0 && (
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900">Failed to Process</h3>
+          <h3 className="text-lg font-semibold text-gray-900">Failed</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {failedImages.map((image) => (
               <div
@@ -179,21 +229,22 @@ export const ImageLibrary: React.FC = () => {
                 <div className="absolute inset-0 flex items-center justify-center">
                   <img
                     src={image.preview}
-                    alt="Failed image"
+                    alt="Failed"
                     className="h-full w-full object-contain opacity-50"
                   />
                 </div>
-                <div className="absolute inset-0 bg-red-50 bg-opacity-50 flex items-center justify-center">
-                  <p className="text-red-600 text-sm text-center px-4">
-                    {image.error || 'Failed to process'}
-                  </p>
-                </div>
+                <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-10 transition-opacity" />
                 <button
                   onClick={(e) => handleDelete(e, image.id)}
                   className="absolute top-2 right-2 p-1.5 bg-white rounded-full shadow-sm hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
-                  <X className="w-4 h-4 text-gray-500" />
+                  <Trash2 className="w-4 h-4 text-gray-500" />
                 </button>
+                {image.error && (
+                  <div className="absolute bottom-0 inset-x-0 bg-red-500 text-white text-sm px-3 py-1">
+                    {image.error}
+                  </div>
+                )}
               </div>
             ))}
           </div>
