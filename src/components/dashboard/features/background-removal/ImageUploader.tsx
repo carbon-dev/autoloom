@@ -53,10 +53,10 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
       console.log('Accepted files:', acceptedFiles);
-      // Create object URLs for previews
+      // Create object URLs for previews while preserving existing ones
       const urls = acceptedFiles.map(file => URL.createObjectURL(file));
-      setPreviewFiles(acceptedFiles);
-      setPreviewUrls(urls);
+      setPreviewFiles(prev => [...prev, ...acceptedFiles]);
+      setPreviewUrls(prev => [...prev, ...urls]);
     },
     []
   );

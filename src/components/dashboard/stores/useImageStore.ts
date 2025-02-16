@@ -129,25 +129,35 @@ export const useImageStore = create<ImageStore>((set, get) => ({
     });
     console.log('Created new image objects:', newImages);
 
-    // Ensure we're not duplicating images
+    // Add new images while preserving existing ones
     set((state) => {
-      const existingIds = new Set(state.images.map(img => img.id));
-      const uniqueNewImages = newImages.filter(img => !existingIds.has(img.id));
+      // Get existing images, filtering out any that are completed
+      const existingImages = state.images.filter(img => 
+        img.status === 'pending' || img.status === 'processing'
+      );
       
-      const updatedState = {
-        images: [...state.images, ...uniqueNewImages],
-        totalCount: state.totalCount + uniqueNewImages.length,
-        processingCount: state.processingCount + uniqueNewImages.length
+      // Combine with new images
+      const allImages = [...existingImages, ...newImages];
+      
+      // Update counts
+      const pendingCount = allImages.filter(img => 
+        img.status === 'pending' || img.status === 'processing'
+      ).length;
+      
+      return {
+        ...state,
+        activeTab: 'uploaded',
+        images: allImages,
+        processingCount: pendingCount,
+        totalCount: state.totalCount + newImages.length
       };
-      console.log('Updated store state:', updatedState);
-      return updatedState;
     });
 
-    // Delay slightly to ensure state is updated before processing
+    // Start processing in the next tick to ensure state is updated
     setTimeout(() => {
-      console.log('Starting image processing...');
-      get().processImages();
-    }, 100);
+      const { processImages } = get();
+      processImages();
+    }, 0);
   },
 
   removeImage: async (id: string) => {
@@ -162,75 +172,40 @@ export const useImageStore = create<ImageStore>((set, get) => ({
       return;
     }
 
-    // Prevent concurrent deletions
-    if (deletingImages.has(id)) {
-      console.log('Already deleting image:', id);
-      return;
-    }
-    deletingImages.add(id);
+    console.log('Starting deletion for image:', id);
+
+    // Update UI immediately to show deletion in progress
+    set(state => ({
+      ...state,
+      images: state.images.map(img => 
+        img.id === id ? { ...img, status: 'deleting' } : img
+      )
+    }));
 
     try {
-      console.log('Starting deletion for image:', id);
-
-      // First verify the image exists
-      const { data: imageData, error: fetchError } = await supabase
-        .from('processed_images')
-        .select('*')
-        .eq('id', id)
-        .eq('customer_id', user.id)
-        .maybeSingle();
-
-      if (fetchError) {
-        console.error('Error fetching image:', fetchError);
-        throw fetchError;
-      }
-
-      if (!imageData) {
-        console.log('Image already deleted or not found:', id);
-        // Update UI to remove the image if it's still there
-        set(state => ({
-          ...state,
-          images: state.images.filter(img => img.id !== id),
-          totalCount: Math.max(0, state.totalCount - 1)
-        }));
-        return;
-      }
-
-      // Mark as deleting in UI
-      set(state => ({
-        ...state,
-        images: state.images.map(img => 
-          img.id === id ? { ...img, status: 'deleting' } : img
-        )
-      }));
-
-      // Delete from database
-      console.log('Deleting from database...');
+      // Delete from database first
       const { error: dbError } = await supabase
         .from('processed_images')
         .delete()
         .eq('id', id)
         .eq('customer_id', user.id);
 
-      if (dbError) {
-        console.error('Database deletion error:', dbError);
-        throw dbError;
-      }
+      if (dbError) throw dbError;
 
-      // Delete from storage
-      await supabase.storage
-        .from('images')
-        .remove([`${user.id}/${id}/original.jpg`]);
-
-      // Remove from UI
+      // If database deletion succeeds, remove from UI
       set(state => ({
         ...state,
         images: state.images.filter(img => img.id !== id),
         totalCount: Math.max(0, state.totalCount - 1)
       }));
 
-      // Reload images to ensure consistency
-      await get().loadImages();
+      // Delete from storage in the background
+      supabase.storage
+        .from('images')
+        .remove([`${user.id}/${id}/original.jpg`])
+        .then(({ error }) => {
+          if (error) console.error('Storage deletion error:', error);
+        });
 
       console.log('Successfully deleted image:', id);
       useToastStore.getState().addToast({
@@ -242,7 +217,7 @@ export const useImageStore = create<ImageStore>((set, get) => ({
     } catch (error) {
       console.error('Error during deletion:', error);
       
-      // Restore the image state
+      // Restore the image state in UI
       set(state => ({
         ...state,
         images: state.images.map(img => 
@@ -256,8 +231,6 @@ export const useImageStore = create<ImageStore>((set, get) => ({
         duration: 5000,
         type: 'error'
       });
-    } finally {
-      deletingImages.delete(id);
     }
   },
 
@@ -380,30 +353,38 @@ export const useImageStore = create<ImageStore>((set, get) => ({
     console.warn('Setting active tab:', { tab });
     
     set(state => {
-      // When switching to processed tab, reload images from Supabase
       if (tab === 'processed') {
-        get().loadImages();
-        return {
-          ...state,
-          activeTab: tab,
-          // Clear the images array immediately, it will be populated by loadImages
-          images: [],
-          processingCount: 0,
-          totalCount: 0
-        };
+        // Keep track of current images
+        const currentImages = state.images;
+        
+        // Load processed images
+        get().loadImages().then(() => {
+          // After loading, combine current with loaded images
+          set(currentState => {
+            const loadedImages = currentState.images;
+            // Combine images, prioritizing current ones
+            const combinedImages = [...currentImages, ...loadedImages.filter(loaded => 
+              !currentImages.some(current => current.id === loaded.id)
+            )];
+            
+            const pendingCount = combinedImages.filter(img => 
+              img.status === 'pending' || img.status === 'processing'
+            ).length;
+
+            return {
+              ...currentState,
+              images: combinedImages,
+              processingCount: pendingCount,
+              totalCount: combinedImages.length
+            };
+          });
+        });
       }
       
-      // When switching to upload tab, show only pending/processing
-      const pendingImages = state.images.filter(img => 
-        img.status === 'pending' || img.status === 'processing'
-      );
-      
+      // Just update the tab, preserve all images
       return {
         ...state,
-        activeTab: tab,
-        images: pendingImages,
-        processingCount: pendingImages.length,
-        totalCount: pendingImages.length
+        activeTab: tab
       };
     });
   }
